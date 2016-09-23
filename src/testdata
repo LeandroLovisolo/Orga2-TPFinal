@@ -1,0 +1,116 @@
+[default]
+
+# Layer 1 weights
+layer1.w00 = -0.4
+layer1.w01 = -0.3
+layer1.w10 = -0.2
+layer1.w11 = -0.1
+layer1.w20 =  0
+layer1.w21 =  0.1
+
+# Layer 2 weights
+layer2.w00 =  0.2
+layer2.w01 =  0.3
+layer2.w02 =  0.4
+
+# Layer 1 biases
+layer1.b0 = -0.2
+layer1.b1 = -0.1
+layer1.b2 =  0.1
+
+# Layer 2 biases
+layer2.b0 =  0.2
+
+# Feedforward test
+feedforward.input1 = -1
+feedforward.input2 =  1
+feedforward.output =  0.66036871
+feedforward.output.precision = 8
+
+# Sigmoid test
+sigmoid.input1 = 0
+sigmoid.output1 = 0.5
+sigmoid.output1.precision = 1
+sigmoid.input2 = 1
+sigmoid.output2 = 0.73105857
+sigmoid.output2.precision = 7
+sigmoid.input3 = 2
+sigmoid.output3 = 0.88079707
+sigmoid.output3.precision = 7
+
+# Sigmoid prime test
+sigmoid_prime.input1 = 0
+sigmoid_prime.output1 = 0.25
+sigmoid_prime.output1.precision = 2
+sigmoid_prime.input2 = 1
+sigmoid_prime.output2 = 0.19661193
+sigmoid_prime.output2.precision = 8
+sigmoid_prime.input3 = 2
+sigmoid_prime.output3 = 0.10499359
+sigmoid_prime.output3.precision = 8
+
+# Backpropagation test
+layer1.nabla_w00 = 0.005251
+layer1.nabla_w01 = 0.010503
+layer1.nabla_w10 = 0.010406
+layer1.nabla_w11 = 0.020813
+layer1.nabla_w20 = 0.014433
+layer1.nabla_w21 = 0.028867
+layer1.nabla_w.precision = 5
+layer2.nabla_w00 = 0.034168
+layer2.nabla_w01 = 0.055729
+layer2.nabla_w02 = 0.084794
+layer2.nabla_w.precision = 5
+layer1.nabla_b0 = 0.005251
+layer1.nabla_b1 = 0.010406
+layer1.nabla_b2 = 0.014433
+layer1.nabla_b.precision = 5
+layer2.nabla_b0 = 0.147611
+layer2.nabla_b.precision = 5
+
+# Update mini-batch test
+minibatch.x00 = 1
+minibatch.x01 = 2
+minibatch.y0  = 3
+minibatch.x10 = 2
+minibatch.x11 = 3
+minibatch.y1  = 5
+minibatch.x20 = 3
+minibatch.x21 = 4
+minibatch.y2  = 7
+minibatch.eta = 0.1
+minibatch.layer1.w00 = -0.39592609
+minibatch.layer1.w01 = -0.29388644
+minibatch.layer1.w10 = -0.18607465
+minibatch.layer1.w11 = -0.07986525
+minibatch.layer1.w20 = 0.02216964
+minibatch.layer1.w21 = 0.13181343
+minibatch.layer2.w00 = 0.21197046
+minibatch.layer2.w01 = 0.329586
+minibatch.layer2.w02 = 0.46127287
+minibatch.layer1.b0 = -0.19796034
+minibatch.layer1.b1 = -0.0937906
+minibatch.layer1.b2 = 0.10964379
+minibatch.layer2.b0 = 0.30111338
+minibatch.precision = 5
+
+# Stochastic gradient descent test
+sgd.input_range_x = 5
+sgd.input_range_y = 5
+sgd.epochs = 10
+sgd.minibatch_size = 5
+sgd.eta = 1
+sgd.layer1.w00 = -0.00873784
+sgd.layer1.w01 = 0.12438838
+sgd.layer1.w10 = 0.40570758
+sgd.layer1.w11 = 0.55704721
+sgd.layer1.w20 = 0.50617075
+sgd.layer1.w21 = 0.67305007
+sgd.layer2.w00 = 0.76292279
+sgd.layer2.w01 = 1.60481316
+sgd.layer2.w02 = 2.10159641
+sgd.layer1.b0 = -0.02852116
+sgd.layer1.b1 = 0.17741358
+sgd.layer1.b2 = 0.35671124
+sgd.layer2.b0 = 2.35764952
+sgd.precision = 5

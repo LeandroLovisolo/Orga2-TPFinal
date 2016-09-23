@@ -1,0 +1,16 @@
+# Uncompressed data
+data/t10k-images-idx3-ubyte
+data/t10k-labels-idx1-ubyte
+data/train-images-idx3-ubyte
+data/train-labels-idx1-ubyte
+
+# Binaries
+src/cc/nn
+src/cc/network_test
+*.o
+*.d
+*.pyc
+
+# Misc
+*.ycm*
+*.vim

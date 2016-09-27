@@ -8,8 +8,6 @@
 #include <vector>
 #include <utility>
 
-template<class Matrix> class NetworkTest;
-
 template<class Matrix>
 class Network {
  public:

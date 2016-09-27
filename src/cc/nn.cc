@@ -8,14 +8,13 @@
 using namespace Eigen;
 using namespace std;
 
-template<class Matrix>
-typename Network<Matrix>::TrainingData to_training_data(
-    const LabelledMistData& mnist_data) {
-  typename Network<Matrix>::TrainingData training_data;
+template<class Matrix, class Vector=Matrix>
+TrainingData<Vector> to_training_data(const LabelledMistData& mnist_data) {
+  TrainingData<Vector> training_data;
   for(pair<vector<uchar>, uchar> p : mnist_data) {
-    typename Network<Matrix>::Vector input(p.first.size());
+    Vector input(p.first.size());
     for(uint i = 0; i < p.first.size(); i++) input(i) = (double) p.first[i];
-    typename Network<Matrix>::Vector output(10);
+    Vector output(10);
     output.Zeros();
     output(p.second) = 1.0;
     training_data.push_back(make_pair(input, output));
@@ -23,7 +22,7 @@ typename Network<Matrix>::TrainingData to_training_data(
   return training_data;
 }
 
-template<class Matrix>
+template<class Matrix, class Vector=Matrix>
 void TrainNetwork() {
   MnistLoader loader("../../data/train-images-idx3-ubyte",
                      "../../data/train-labels-idx1-ubyte",
@@ -32,9 +31,9 @@ void TrainNetwork() {
 
   cout << "Loading data..." << endl;
 
-  typename Network<Matrix>::TrainingData training_data =
+  TrainingData<Vector> training_data =
       to_training_data<Matrix>(loader.train_data());
-  typename Network<Matrix>::TrainingData test_data =
+  TrainingData<Vector> test_data =
       to_training_data<Matrix>(loader.test_data());
 
   Network<Matrix> nn(vector<int> { 784, 30, 10 });

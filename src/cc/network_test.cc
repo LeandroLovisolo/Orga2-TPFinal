@@ -13,11 +13,11 @@
 
 using namespace std;
 
-template<class Matrix>
-class MockNetwork : public Network<Matrix> {
+template<class Matrix, class Vector=Matrix>
+class MockNetwork : public Network<Matrix, Vector> {
  public:
-  MockNetwork(const std::vector<int> &sizes) : Network<Matrix>(sizes) {}
-  void Shuffle_(typename Network<Matrix>::TrainingData& data) {
+  MockNetwork(const std::vector<int> &sizes) : Network<Matrix, Vector>(sizes) {}
+  void Shuffle_(TrainingData<Vector>& data) {
     if(data.size() == 0) return;
     auto first = data[0];
     data.erase(data.begin());
@@ -27,13 +27,15 @@ class MockNetwork : public Network<Matrix> {
 
 template<class Matrix>
 class NetworkTest : public ::testing::Test {
+  using Vector = Matrix;
+
  public:
   NetworkTest() {
     LoadTestData();
   }
 
   virtual void SetUp() {
-    nn = make_unique<MockNetwork<Matrix>>(vector<int> { 2, 3, 1 });
+    nn = make_unique<MockNetwork<Matrix, Vector>>(vector<int> { 2, 3, 1 });
     nn->weights[0].Set({ t["layer1.w00"], t["layer1.w01"],
                          t["layer1.w10"], t["layer1.w11"],
                          t["layer1.w20"], t["layer1.w21"] });
@@ -58,11 +60,11 @@ class NetworkTest : public ::testing::Test {
     return Matrix(size, 1);
   }
 
-  vector<pair<Matrix, Matrix>> CreateTrainingData() {
-    return vector<pair<Matrix, Matrix>>();
+  TrainingData<Vector> CreateTrainingData() {
+    return TrainingData<Vector>();
   }
 
-  unique_ptr<MockNetwork<Matrix>> nn;
+  unique_ptr<MockNetwork<Matrix, Vector>> nn;
   unordered_map<string, double> t;
 };
 

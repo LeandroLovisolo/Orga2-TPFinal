@@ -1,18 +1,15 @@
 #include <cmath>
 #include <fstream>
 #include <memory>
-#include <random>
 #include <string>
 #include <vector>
 #include <unordered_map>
 
 #include "ini.h"
 #include "gtest/gtest.h"
-#include "Eigen/Dense"
 
 #include "matrix.h"
 #include "network.h"
-#include "old_network.h"
 
 using namespace std;
 

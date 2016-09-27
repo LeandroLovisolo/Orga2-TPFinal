@@ -17,10 +17,10 @@ class Network {
   Network(const std::vector<int> &sizes);
   Vector FeedForward(const Vector& input);
   void SGD(const TrainingData<Vector>& training_data,
-           int epochs, int mini_batch_size, double eta);
+           int epochs, int mini_batch_size, float eta);
   void SGD(const TrainingData<Vector>& training_data,
            const TrainingData<Vector>& test_data,
-           int epochs, int mini_batch_size, double eta);
+           int epochs, int mini_batch_size, float eta);
 
   int num_layers;
   std::vector<int> sizes;
@@ -32,7 +32,7 @@ class Network {
   Vector SigmoidPrime_(const Vector& input);
   std::pair<std::vector<Matrix>, std::vector<Vector>> Backpropagation_(
       const Vector &input, const Vector &expected);
-  void UpdateMiniBatch_(const TrainingData<Vector>& minibatch, double eta);
+  void UpdateMiniBatch_(const TrainingData<Vector>& minibatch, float eta);
   TrainingData<Vector> GetMiniBatch_(const TrainingData<Vector>& training_data,
                                      int mini_batch_size, int n);
   virtual void Shuffle_(TrainingData<Vector>& data);
@@ -67,7 +67,7 @@ Vector Network<Matrix, Vector>::FeedForward(const Vector &input) {
   return a;
 }
 
-double sigmoid_unary(double x) {
+float sigmoid_unary(float x) {
   return 1.0 / (1.0 + std::exp(-x));
 }
 
@@ -136,7 +136,7 @@ Network<Matrix, Vector>::Backpropagation_(const Vector& input,
 
 template<class Matrix, class Vector>
 void Network<Matrix, Vector>::UpdateMiniBatch_(
-    const TrainingData<Vector>& minibatch, double eta) {
+    const TrainingData<Vector>& minibatch, float eta) {
   // Initialize weights gradient with zeroes
   std::vector<Matrix> nabla_w;
   for(const Matrix& w : weights) {
@@ -191,14 +191,14 @@ void Network<Matrix, Vector>::Shuffle_(TrainingData<Vector>& data) {
 
 template<class Matrix, class Vector>
 void Network<Matrix, Vector>::SGD(const TrainingData<Vector>& training_data,
-                                  int epochs, int mini_batch_size, double eta) {
+                                  int epochs, int mini_batch_size, float eta) {
   SGD(training_data, TrainingData<Vector>(), epochs, mini_batch_size, eta);
 }
 
 template<class Matrix, class Vector>
 void Network<Matrix, Vector>::SGD(const TrainingData<Vector>& training_data,
                                   const TrainingData<Vector>& test_data,
-                                  int epochs, int mini_batch_size, double eta) {
+                                  int epochs, int mini_batch_size, float eta) {
   // Local copy of training data
   TrainingData<Vector> shuffled_training_data(training_data);
 
@@ -239,7 +239,7 @@ void Network<Matrix, Vector>::SGD(const TrainingData<Vector>& training_data,
 
     // Report progress
     if(!test_data.empty()) {
-      double accuracy = (double) Evaluate_(test_data) / test_data.size() * 100;
+      float accuracy = (float) Evaluate_(test_data) / test_data.size() * 100;
       std::cout << "\r[Epoch " << (i + 1) << "] "
                 << accuracy << "\% accuracy on test data." << std::endl;
     }

@@ -27,25 +27,25 @@ void NaiveMatrix::operator=(const NaiveMatrix& other) {
   m_ = other.m_;
 }
 
-double& NaiveMatrix::operator()(uint i, uint j) {
+float& NaiveMatrix::operator()(uint i, uint j) {
   assert(i < rows_);
   assert(j < cols_);
   return m_[cols_ * i + j];
 }
 
-double NaiveMatrix::operator()(uint i, uint j) const {
+float NaiveMatrix::operator()(uint i, uint j) const {
   assert(i < rows_);
   assert(j < cols_);
   return m_[cols_ * i + j];
 }
 
-double& NaiveMatrix::operator()(uint i) {
+float& NaiveMatrix::operator()(uint i) {
   assert(cols_ == 1);
   assert(i < rows_);
   return m_[i];
 }
 
-double NaiveMatrix::operator()(uint i) const {
+float NaiveMatrix::operator()(uint i) const {
   assert(cols_ == 1);
   assert(i < rows_);
   return m_[i];
@@ -89,7 +89,7 @@ void NaiveMatrix::operator*=(const NaiveMatrix& other) {
   assert(cols_ == other.rows_);
   uint new_rows = rows_;
   uint new_cols = other.cols_;
-  vector<double> new_m(new_rows * new_cols, 0.);
+  vector<float> new_m(new_rows * new_cols, 0.);
   for(uint i = 0; i < new_rows; i++) {
     for(uint j = 0; j < new_cols; j++) {
       for(uint k = 0; k < cols_; k++) {
@@ -102,13 +102,13 @@ void NaiveMatrix::operator*=(const NaiveMatrix& other) {
   cols_ = new_cols;
 }
 
-NaiveMatrix NaiveMatrix::operator*(double c) const {
+NaiveMatrix NaiveMatrix::operator*(float c) const {
   NaiveMatrix res(*this);
   res *= c;
   return res;
 }
 
-void NaiveMatrix::operator*=(double c) {
+void NaiveMatrix::operator*=(float c) {
   for(uint i = 0; i < m_.size(); i++) {
     m_[i] *= c;
   }
@@ -135,7 +135,7 @@ NaiveMatrix NaiveMatrix::Transpose() const {
 }
 
 NaiveMatrix NaiveMatrix::ApplyFn(
-    const pointer_to_unary_function<double, double>& fn) const {
+    const pointer_to_unary_function<float, float>& fn) const {
   NaiveMatrix res(*this);
   for(uint i = 0; i < rows_; i++) {
     for(uint j = 0; j < cols_; j++) {
@@ -164,25 +164,25 @@ void EigenMatrix::operator=(const EigenMatrix& other) {
   m_ = other.m_;
 }
 
-double& EigenMatrix::operator()(uint i, uint j) {
+float& EigenMatrix::operator()(uint i, uint j) {
   assert(i < rows_);
   assert(j < cols_);
   return m_(i, j);
 }
 
-double EigenMatrix::operator()(uint i, uint j) const {
+float EigenMatrix::operator()(uint i, uint j) const {
   assert(i < rows_);
   assert(j < cols_);
   return m_(i, j);
 }
 
-double& EigenMatrix::operator()(uint i) {
+float& EigenMatrix::operator()(uint i) {
   assert(cols_ == 1);
   assert(i < rows_);
   return m_(i, 0);
 }
 
-double EigenMatrix::operator()(uint i) const {
+float EigenMatrix::operator()(uint i) const {
   assert(cols_ == 1);
   assert(i < rows_);
   return m_(i, 0);
@@ -220,13 +220,13 @@ void EigenMatrix::operator*=(const EigenMatrix& other) {
   cols_ = m_.cols();
 }
 
-EigenMatrix EigenMatrix::operator*(double c) const {
+EigenMatrix EigenMatrix::operator*(float c) const {
   EigenMatrix res(*this);
   res *= c;
   return res;
 }
 
-void EigenMatrix::operator*=(double c) {
+void EigenMatrix::operator*=(float c) {
   m_ *= c;
 }
 
@@ -247,7 +247,7 @@ EigenMatrix EigenMatrix::Transpose() const {
 }
 
 EigenMatrix EigenMatrix::ApplyFn(
-    const pointer_to_unary_function<double, double>& fn) const {
+    const pointer_to_unary_function<float, float>& fn) const {
   EigenMatrix res(*this);
   res.m_ = res.m_.unaryExpr(fn);
   return res;

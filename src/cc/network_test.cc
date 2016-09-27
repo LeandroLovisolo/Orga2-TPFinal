@@ -67,7 +67,7 @@ class NetworkTest : public ::testing::Test {
   }
 
   unique_ptr<MockNetwork<Matrix, Vector>> nn;
-  unordered_map<string, double> t;
+  unordered_map<string, float> t;
 };
 
 typedef ::testing::Types<NaiveMatrix, EigenMatrix> MatrixTypes;
@@ -108,7 +108,7 @@ TYPED_TEST(NetworkTest, FeedForward) {
   auto result = nn.FeedForward(Vector(2).Set({ t["feedforward.input1"],
                                                t["feedforward.input2"] }));
   ASSERT_EQ(1, result.size());
-  double precision = pow(10, -t["feedforward.output.precision"]);
+  float precision = pow(10, -t["feedforward.output.precision"]);
   EXPECT_NEAR(t["feedforward.output"], result(0), precision);
 }
 
@@ -117,9 +117,9 @@ TYPED_TEST(NetworkTest, Sigmoid) {
                            t["sigmoid.input2"],
                            t["sigmoid.input3"] });
   auto res = nn.Sigmoid_(v);
-  double precision1 = pow(10, -t["sigmoid.output1.precision"]);
-  double precision2 = pow(10, -t["sigmoid.output2.precision"]);
-  double precision3 = pow(10, -t["sigmoid.output3.precision"]);
+  float precision1 = pow(10, -t["sigmoid.output1.precision"]);
+  float precision2 = pow(10, -t["sigmoid.output2.precision"]);
+  float precision3 = pow(10, -t["sigmoid.output3.precision"]);
   EXPECT_NEAR(t["sigmoid.output1"], res(0), precision1);
   EXPECT_NEAR(t["sigmoid.output2"], res(1), precision2);
   EXPECT_NEAR(t["sigmoid.output3"], res(2), precision3);
@@ -130,9 +130,9 @@ TYPED_TEST(NetworkTest, SigmoidPrime) {
                            t["sigmoid_prime.input2"],
                            t["sigmoid_prime.input3"] });
   auto res = nn.SigmoidPrime_(v);
-  double precision1 = pow(10, -t["sigmoid_prime.output1.precision"]);
-  double precision2 = pow(10, -t["sigmoid_prime.output2.precision"]);
-  double precision3 = pow(10, -t["sigmoid_prime.output3.precision"]);
+  float precision1 = pow(10, -t["sigmoid_prime.output1.precision"]);
+  float precision2 = pow(10, -t["sigmoid_prime.output2.precision"]);
+  float precision3 = pow(10, -t["sigmoid_prime.output3.precision"]);
   EXPECT_NEAR(t["sigmoid_prime.output1"], res(0), precision1);
   EXPECT_NEAR(t["sigmoid_prime.output2"], res(1), precision2);
   EXPECT_NEAR(t["sigmoid_prime.output3"], res(2), precision3);
@@ -152,7 +152,7 @@ TYPED_TEST(NetworkTest, Backpropagation) {
   // First layer weights
   ASSERT_EQ(3, nabla_w[0].rows());
   ASSERT_EQ(2, nabla_w[0].cols());
-  double precision = pow(10, -t["layer1.nabla_w.precision"]);
+  float precision = pow(10, -t["layer1.nabla_w.precision"]);
   EXPECT_NEAR(t["layer1.nabla_w00"], nabla_w[0](0, 0), precision);
   EXPECT_NEAR(t["layer1.nabla_w01"], nabla_w[0](0, 1), precision);
   EXPECT_NEAR(t["layer1.nabla_w10"], nabla_w[0](1, 0), precision);
@@ -195,8 +195,8 @@ TYPED_TEST(NetworkTest, UpdateMiniBatch) {
   auto y2 = Vector(1).Set({ t["minibatch.y2"] });
   minibatch.push_back(make_pair(x2, y2));
 
-  double eta = t["minibatch.eta"];
-  double precision = pow(10, -t["minibatch.precision"]);
+  float eta = t["minibatch.eta"];
+  float precision = pow(10, -t["minibatch.precision"]);
   nn.UpdateMiniBatch_(minibatch, eta);
 
   // First layer weights
@@ -224,8 +224,8 @@ TYPED_TEST(NetworkTest, UpdateMiniBatch) {
 TYPED_TEST(NetworkTest, GetMiniBatch) {
   auto data = TrainingData();
   for(int i = 0; i < 20; i++) {
-    auto x = Vector(1).Set({ (double) i });
-    auto y = Vector(1).Set({ (double) i });
+    auto x = Vector(1).Set({ (float) i });
+    auto y = Vector(1).Set({ (float) i });
     data.push_back(make_pair(x, y));
   }
 
@@ -247,8 +247,8 @@ TYPED_TEST(NetworkTest, GetMiniBatch) {
 TYPED_TEST(NetworkTest, MockShuffle) {
   auto data = TrainingData();
   for(int i = 0; i < 3; i++) {
-    data.push_back(make_pair(Vector(1).Set({ (double) i }),
-                             Vector(1).Set({ (double) i })));
+    data.push_back(make_pair(Vector(1).Set({ (float) i }),
+                             Vector(1).Set({ (float) i })));
   }
   EXPECT_EQ(0, data[0].first(0));
   EXPECT_EQ(1, data[1].first(0));
@@ -266,8 +266,8 @@ TYPED_TEST(NetworkTest, SGD) {
   for(int i = 0; i < int(t["sgd.input_range_x"]); i++) {
     for(int j = 0; j < int(t["sgd.input_range_y"]); j++) {
       training_data.push_back(
-          make_pair(Vector(2).Set({ (double) i, (double) j }),
-                    Vector(1).Set({ (double) i + j })));
+          make_pair(Vector(2).Set({ (float) i, (float) j }),
+                    Vector(1).Set({ (float) i + j })));
     }
   }
 
@@ -277,7 +277,7 @@ TYPED_TEST(NetworkTest, SGD) {
          int(t["sgd.minibatch_size"]),
          t["sgd.eta"]);
 
-  double precision = pow(10, -t["sgd.precision"]);
+  float precision = pow(10, -t["sgd.precision"]);
 
   // First layer weights
   EXPECT_NEAR(t["sgd.layer1.w00"], nn.weights[0](0, 0), precision);

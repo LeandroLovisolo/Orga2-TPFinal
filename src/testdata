@@ -25,7 +25,7 @@ layer2.b0 =  0.2
 feedforward.input1 = -1
 feedforward.input2 =  1
 feedforward.output =  0.66036871
-feedforward.output.precision = 8
+feedforward.output.precision = 7
 
 # Sigmoid test
 sigmoid.input1 = 0
@@ -47,7 +47,7 @@ sigmoid_prime.output2 = 0.19661193
 sigmoid_prime.output2.precision = 8
 sigmoid_prime.input3 = 2
 sigmoid_prime.output3 = 0.10499359
-sigmoid_prime.output3.precision = 8
+sigmoid_prime.output3.precision = 7
 
 # Backpropagation test
 layer1.nabla_w00 = 0.005251

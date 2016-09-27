@@ -172,7 +172,7 @@ TYPED_TEST(MatrixTest, Transpose) {
   EXPECT_EQ(m.Transpose(), n);
 }
 
-double square(double x) { return x * x; }
+float square(float x) { return x * x; }
 
 TYPED_TEST(MatrixTest, ApplyFn) {
   auto m = Matrix(2, 2).Set({ 1, 2, 3, 4 });

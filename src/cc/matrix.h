@@ -9,6 +9,10 @@
 #include "Eigen/Dense"
 #include "gtest/gtest_prod.h"
 
+//////////////////////////////////////////////////
+// BaseMatrix                                   //
+//////////////////////////////////////////////////
+
 typedef unsigned int uint;
 
 template <class Matrix>
@@ -26,16 +30,16 @@ class BaseMatrix {
 
   // Initializers
   virtual void operator=(const Matrix& other) = 0;
-  BaseMatrix<Matrix>& Set(std::initializer_list<double> list);
+  BaseMatrix<Matrix>& Set(std::initializer_list<float> list);
   BaseMatrix<Matrix>& Zeros();
   BaseMatrix<Matrix>& Ones();
   BaseMatrix<Matrix>& Random();
 
   // Coefficient accessors
-  virtual double& operator()(uint i, uint j) = 0;
-  virtual double operator()(uint i, uint j) const = 0;
-  virtual double& operator()(uint i) = 0;  // vector only
-  virtual double operator()(uint i) const = 0;  // vector only
+  virtual float& operator()(uint i, uint j) = 0;
+  virtual float operator()(uint i, uint j) const = 0;
+  virtual float& operator()(uint i) = 0;  // vector only
+  virtual float operator()(uint i) const = 0;  // vector only
 
   // Addition
   virtual Matrix operator+(const Matrix& other) const = 0;
@@ -50,8 +54,8 @@ class BaseMatrix {
   virtual void operator*=(const Matrix& other) = 0;
 
   // Scalar product
-  virtual Matrix operator*(double c) const = 0;
-  virtual void operator*=(double c) = 0;
+  virtual Matrix operator*(float c) const = 0;
+  virtual void operator*=(float c) = 0;
 
   // Coefficient-wise product
   virtual Matrix CoeffWiseProduct(const Matrix& other) const = 0;
@@ -61,7 +65,7 @@ class BaseMatrix {
 
   // Coefficient-wise application of unary function
   Matrix ApplyFn(
-      const std::pointer_to_unary_function<double, double>& fn) const;
+      const std::pointer_to_unary_function<float, float>& fn) const;
 
  protected:
   uint rows_;
@@ -86,10 +90,10 @@ bool BaseMatrix<Matrix>::operator!=(const Matrix& other) const {
 
 template <class Matrix>
 BaseMatrix<Matrix>& BaseMatrix<Matrix>::Set(
-    std::initializer_list<double> list) {
+    std::initializer_list<float> list) {
   assert(list.size() == rows_ * cols_);
   uint i = 0, j = 0;
-  for(double x : list) {
+  for(float x : list) {
     operator()(i, j) = x;
     if(++j == cols_) {
       j = 0;
@@ -122,7 +126,7 @@ BaseMatrix<Matrix>& BaseMatrix<Matrix>::Ones() {
 template <class Matrix>
 BaseMatrix<Matrix>& BaseMatrix<Matrix>::Random() {
   std::default_random_engine generator;
-  std::normal_distribution<double> distribution;
+  std::normal_distribution<float> distribution;
   for(uint i = 0; i < rows_; i++) {
     for(uint j = 0; j < cols_; j++) {
       operator()(i, j) = distribution(generator);
@@ -130,6 +134,10 @@ BaseMatrix<Matrix>& BaseMatrix<Matrix>::Random() {
   }
   return *this;
 }
+
+//////////////////////////////////////////////////
+// NaiveMatrix                                  //
+//////////////////////////////////////////////////
 
 class NaiveMatrix : public BaseMatrix<NaiveMatrix> {
  public:
@@ -139,7 +147,7 @@ class NaiveMatrix : public BaseMatrix<NaiveMatrix> {
 
   // Initializers
   void operator=(const NaiveMatrix& other);
-  NaiveMatrix& Set(std::initializer_list<double> list) {
+  NaiveMatrix& Set(std::initializer_list<float> list) {
     BaseMatrix<NaiveMatrix>::Set(list);
     return *this;
   }
@@ -148,10 +156,10 @@ class NaiveMatrix : public BaseMatrix<NaiveMatrix> {
   NaiveMatrix& Random() { BaseMatrix<NaiveMatrix>::Random(); return *this; }
 
   // Coefficient accessors
-  double& operator()(uint i, uint j);
-  double operator()(uint i, uint j) const;
-  double& operator()(uint i);  // vector only
-  double operator()(uint i) const;  // vector only
+  float& operator()(uint i, uint j);
+  float operator()(uint i, uint j) const;
+  float& operator()(uint i);  // vector only
+  float operator()(uint i) const;  // vector only
 
   // Addition
   NaiveMatrix operator+(const NaiveMatrix& other) const;
@@ -166,8 +174,8 @@ class NaiveMatrix : public BaseMatrix<NaiveMatrix> {
   void operator*=(const NaiveMatrix& other);
 
   // Scalar product
-  NaiveMatrix operator*(double c) const;
-  void operator*=(double c);
+  NaiveMatrix operator*(float c) const;
+  void operator*=(float c);
 
   // Coefficient-wise product
   NaiveMatrix CoeffWiseProduct(const NaiveMatrix& other) const;
@@ -177,11 +185,15 @@ class NaiveMatrix : public BaseMatrix<NaiveMatrix> {
 
   // Coefficient-wise application of unary function
   NaiveMatrix ApplyFn(
-      const std::pointer_to_unary_function<double, double>& fn) const;
+      const std::pointer_to_unary_function<float, float>& fn) const;
 
  private:
-  std::vector<double> m_;
+  std::vector<float> m_;
 };
+
+//////////////////////////////////////////////////
+// EigenMatrix                                  //
+//////////////////////////////////////////////////
 
 class EigenMatrix : public BaseMatrix<EigenMatrix> {
  public:
@@ -191,7 +203,7 @@ class EigenMatrix : public BaseMatrix<EigenMatrix> {
 
   // Initializers
   void operator=(const EigenMatrix& other);
-  EigenMatrix& Set(std::initializer_list<double> list) {
+  EigenMatrix& Set(std::initializer_list<float> list) {
     BaseMatrix<EigenMatrix>::Set(list);
     return *this;
   }
@@ -200,10 +212,10 @@ class EigenMatrix : public BaseMatrix<EigenMatrix> {
   EigenMatrix& Random() { BaseMatrix<EigenMatrix>::Random(); return *this; }
 
   // Coefficient accessors
-  double& operator()(uint i, uint j);
-  double operator()(uint i, uint j) const;
-  double& operator()(uint i);  // vector only
-  double operator()(uint i) const;  // vector only
+  float& operator()(uint i, uint j);
+  float operator()(uint i, uint j) const;
+  float& operator()(uint i);  // vector only
+  float operator()(uint i) const;  // vector only
 
   // Addition
   EigenMatrix operator+(const EigenMatrix& other) const;
@@ -218,8 +230,8 @@ class EigenMatrix : public BaseMatrix<EigenMatrix> {
   void operator*=(const EigenMatrix& other);
 
   // Scalar product
-  EigenMatrix operator*(double c) const;
-  void operator*=(double c);
+  EigenMatrix operator*(float c) const;
+  void operator*=(float c);
 
   // Coefficient-wise product
   EigenMatrix CoeffWiseProduct(const EigenMatrix& other) const;
@@ -229,10 +241,10 @@ class EigenMatrix : public BaseMatrix<EigenMatrix> {
 
   // Coefficient-wise application of unary function
   EigenMatrix ApplyFn(
-      const std::pointer_to_unary_function<double, double>& fn) const;
+      const std::pointer_to_unary_function<float, float>& fn) const;
 
  private:
-  Eigen::MatrixXd m_;
+  Eigen::MatrixXf m_;
 };
 
 #endif // __MATRIX_H__

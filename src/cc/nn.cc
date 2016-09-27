@@ -17,7 +17,7 @@ TrainingData<Vector> to_training_data(const LabelledMistData& mnist_data) {
   TrainingData<Vector> training_data;
   for(pair<vector<uchar>, uchar> p : mnist_data) {
     Vector input(p.first.size());
-    for(uint i = 0; i < p.first.size(); i++) input(i) = (double) p.first[i];
+    for(uint i = 0; i < p.first.size(); i++) input(i) = (float) p.first[i];
     Vector output(10);
     output.Zeros();
     output(p.second) = 1.0;

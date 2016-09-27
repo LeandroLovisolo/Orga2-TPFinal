@@ -10,7 +10,7 @@ using namespace std;
 
 template<class Matrix>
 typename Network<Matrix>::TrainingData to_training_data(
-    const labelled_mnist_data& mnist_data) {
+    const LabelledMistData& mnist_data) {
   typename Network<Matrix>::TrainingData training_data;
   for(pair<vector<uchar>, uchar> p : mnist_data) {
     typename Network<Matrix>::Vector input(p.first.size());

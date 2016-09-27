@@ -15,7 +15,7 @@ MnistLoader::MnistLoader(const string& train_images_path,
   test_data_ = ReadDataset_(test_images_path, test_labels_path);
 }
 
-string MnistLoader::ImageToString(const labelled_mnist_data& data, int index) {
+string MnistLoader::ImageToString(const LabelledMistData& data, int index) {
   stringstream ss;
   for(int x = 0; x < 28; x++) {
     for(int y = 27; y >= 0; y--) {
@@ -29,13 +29,13 @@ string MnistLoader::ImageToString(const labelled_mnist_data& data, int index) {
   return ss.str();
 }
 
-labelled_mnist_data MnistLoader::ReadDataset_(const std::string& images_path,
-                                              const std::string& labels_path) {
+LabelledMistData MnistLoader::ReadDataset_(const std::string& images_path,
+                                           const std::string& labels_path) {
   vector<vector<uchar>> images = LoadImagesFile_(images_path);
   vector<uchar> labels = LoadLabelsFile_(labels_path);
   assert(images.size() == labels.size());
 
-  labelled_mnist_data data;
+  LabelledMistData data;
   for(int i = 0; i < images.size(); i++) {
     data.push_back(make_pair(images[i], labels[i]));
   }

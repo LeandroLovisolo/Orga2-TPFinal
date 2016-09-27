@@ -1,12 +1,15 @@
-BINARIES  = nn network_test
+MAIN            = nn
+MAIN_SRC        = nn.cc matrix.cc mnist_loader.cc
 
-MAIN      = nn
-MAIN_SRC  = nn.cc network.cc mnist_loader.cc
+NN_TEST         = network_test
+NN_TEST_SRC     = network_test.cc matrix.cc
 
-TEST      = network_test
-TEST_SRC  = network_test.cc network.cc
+MATRIX_TEST     = matrix_test
+MATRIX_TEST_SRC = matrix_test.cc matrix.cc
 
-TEST_DEPS = gtest-all.o gmock-all.o gtest_main.o
+TEST_DEPS       = gtest-all.o gmock-all.o gtest_main.o
+
+BINARIES        = $(MAIN) $(NN_TEST) $(MATRIX_TEST)
 
 ################################################################################
 
@@ -24,6 +27,7 @@ CXXFLAGS := $(CXXFLAGS) -std=c++14 \
             -I $(GTEST_DIR) -I $(GMOCK_DIR) \
             -O3 -fopenmp
 LD        = $(CXX)
+LDFLAGS   = $(CXXFLAGS)
 
 ################################################################################
 
@@ -38,24 +42,13 @@ TEST_LABELS = ../../data/t10k-labels-idx1-ubyte
 
 all: data $(BINARIES)
 
-data: $(TRAIN_IMAGES) $(TRAIN_LABELS) $(TEST_IMAGES) $(TEST_LABELS)
-
-$(TRAIN_IMAGES): ${TRAIN_IMAGES}.gz
-	gunzip --keep $^
-
-$(TRAIN_LABELS): ${TRAIN_LABELS}.gz
-	gunzip --keep $^
-
-$(TEST_IMAGES): ${TEST_IMAGES}.gz
-	gunzip --keep $^
-
-$(TEST_LABELS): ${TEST_LABELS}.gz
-	gunzip --keep $^
-
 $(MAIN): $(MAIN_SRC:.cc=.o)
 	$(LD) $(LDFLAGS) -o $@ $^
 
-$(TEST): $(TEST_SRC:.cc=.o) $(TEST_DEPS)
+$(NN_TEST): $(NN_TEST_SRC:.cc=.o) $(TEST_DEPS)
+	$(LD) $(LDFLAGS) -pthread -o $@ $^
+
+$(MATRIX_TEST): $(MATRIX_TEST_SRC:.cc=.o) $(TEST_DEPS)
 	$(LD) $(LDFLAGS) -pthread -o $@ $^
 
 %.o: %.cc
@@ -72,6 +65,20 @@ gtest_main.o:
 	$(CXX) $(CXXFLAGS) -c ${GTEST_DIR}/src/gtest_main.cc -o gtest_main.o
 
 -include $(DEP)
+
+data: $(TRAIN_IMAGES) $(TRAIN_LABELS) $(TEST_IMAGES) $(TEST_LABELS)
+
+$(TRAIN_IMAGES): ${TRAIN_IMAGES}.gz
+	gunzip --keep $^
+
+$(TRAIN_LABELS): ${TRAIN_LABELS}.gz
+	gunzip --keep $^
+
+$(TEST_IMAGES): ${TEST_IMAGES}.gz
+	gunzip --keep $^
+
+$(TEST_LABELS): ${TEST_LABELS}.gz
+	gunzip --keep $^
 
 clean:
 	rm -f $(BINARIES) *.o *.d \

@@ -1,39 +1,50 @@
 #include <iostream>
 #include <Eigen/Dense>
 
+#include "matrix.h"
 #include "mnist_loader.h"
 #include "network.h"
 
 using namespace Eigen;
 using namespace std;
 
-labelled_data to_labelled_data(const labelled_mnist_data& data) {
-  labelled_data data_;
-  for(pair<vector<uchar>, uchar> p : data) {
-    vector<double> input;
-    for(uchar pixel : p.first) input.push_back((double) pixel);
-    vector<double> output(10, 0);
-    output[p.second] = 1.0;
-    data_.push_back(make_pair(input, output));
+template<class Matrix>
+typename Network<Matrix>::TrainingData to_training_data(
+    const labelled_mnist_data& mnist_data) {
+  typename Network<Matrix>::TrainingData training_data;
+  for(pair<vector<uchar>, uchar> p : mnist_data) {
+    typename Network<Matrix>::Vector input(p.first.size());
+    for(uint i = 0; i < p.first.size(); i++) input(i) = (double) p.first[i];
+    typename Network<Matrix>::Vector output(10);
+    output.Zeros();
+    output(p.second) = 1.0;
+    training_data.push_back(make_pair(input, output));
   }
-  return data_;
+  return training_data;
 }
 
-int main() {
+template<class Matrix>
+void TrainNetwork() {
   MnistLoader loader("../../data/train-images-idx3-ubyte",
                      "../../data/train-labels-idx1-ubyte",
                      "../../data/t10k-images-idx3-ubyte",
                      "../../data/t10k-labels-idx1-ubyte");
 
   cout << "Loading data..." << endl;
-  labelled_data training_data = to_labelled_data(loader.train_data());
-  labelled_data test_data = to_labelled_data(loader.test_data());
 
-  Network nn(vector<int> { 784, 30, 10 });
+  typename Network<Matrix>::TrainingData training_data =
+      to_training_data<Matrix>(loader.train_data());
+  typename Network<Matrix>::TrainingData test_data =
+      to_training_data<Matrix>(loader.test_data());
+
+  Network<Matrix> nn(vector<int> { 784, 30, 10 });
 
   cout << "Starting training..." << endl;
   nn.SGD(training_data, test_data, 100, 50, 0.1);
   cout << "Training finished." << endl;
+}
 
+int main() {
+  TrainNetwork<EigenMatrix>();
   return 0;
 }

@@ -10,25 +10,25 @@
 #include "gtest/gtest.h"
 #include "Eigen/Dense"
 
+#include "matrix.h"
 #include "network.h"
+#include "old_network.h"
 
 using namespace std;
-using namespace Eigen;
 
-class MockNetwork : public Network {
+template<class Matrix>
+class MockNetwork : public Network<Matrix> {
  public:
-  MockNetwork(const std::vector<int> &sizes) : Network(sizes) {}
- protected:
-  void Shuffle_(labelled_eigen_data& data) {
+  MockNetwork(const std::vector<int> &sizes) : Network<Matrix>(sizes) {}
+  void Shuffle_(typename Network<Matrix>::TrainingData& data) {
     if(data.size() == 0) return;
     auto first = data[0];
     data.erase(data.begin());
     data.push_back(first);
   }
-
-  FRIEND_TEST(NetworkTest, MockShuffle);
 };
 
+template<class Matrix>
 class NetworkTest : public ::testing::Test {
  public:
   NetworkTest() {
@@ -36,13 +36,13 @@ class NetworkTest : public ::testing::Test {
   }
 
   virtual void SetUp() {
-    nn = make_unique<MockNetwork>(vector<int> { 2, 3, 1 });
-    nn->weights[0] << t["layer1.w00"], t["layer1.w01"],
-                      t["layer1.w10"], t["layer1.w11"],
-                      t["layer1.w20"], t["layer1.w21"];
-    nn->weights[1] << t["layer2.w00"], t["layer2.w01"], t["layer2.w02"];
-    nn->biases[0]  << t["layer1.b0"], t["layer1.b1"], t["layer1.b2"];
-    nn->biases[1]  << t["layer2.b0"];
+    nn = make_unique<MockNetwork<Matrix>>(vector<int> { 2, 3, 1 });
+    nn->weights[0].Set({ t["layer1.w00"], t["layer1.w01"],
+                         t["layer1.w10"], t["layer1.w11"],
+                         t["layer1.w20"], t["layer1.w21"] });
+    nn->weights[1].Set({ t["layer2.w00"], t["layer2.w01"], t["layer2.w02"] });
+    nn->biases[0].Set({ t["layer1.b0"], t["layer1.b1"], t["layer1.b2"] });
+    nn->biases[1].Set({ t["layer2.b0"] });
   }
 
   void LoadTestData() {
@@ -53,46 +53,69 @@ class NetworkTest : public ::testing::Test {
     }
   }
 
-  unique_ptr<MockNetwork> nn;
+  Matrix CreateMatrix(uint rows, uint cols) {
+    return Matrix(rows, cols);
+  }
+
+  Matrix CreateVector(uint size) {
+    return Matrix(size, 1);
+  }
+
+  vector<pair<Matrix, Matrix>> CreateTrainingData() {
+    return vector<pair<Matrix, Matrix>>();
+  }
+
+  unique_ptr<MockNetwork<Matrix>> nn;
   unordered_map<string, double> t;
 };
 
-TEST_F(NetworkTest, NumLayers) {
-  EXPECT_EQ(3, nn->num_layers);
+typedef ::testing::Types<EigenMatrix> MatrixTypes;
+
+TYPED_TEST_CASE(NetworkTest, MatrixTypes);
+
+#define nn (*this->nn)
+#define t this->t
+#define Matrix this->CreateMatrix
+#define Vector this->CreateVector
+#define TrainingData this->CreateTrainingData
+
+TYPED_TEST(NetworkTest, NumLayers) {
+  EXPECT_EQ(3, nn.num_layers);
 }
 
-TEST_F(NetworkTest, Sizes) {
-  EXPECT_EQ((vector<int> { 2, 3, 1 }), nn->sizes);
+TYPED_TEST(NetworkTest, Sizes) {
+  EXPECT_EQ((vector<int> { 2, 3, 1 }), nn.sizes);
 }
 
-TEST_F(NetworkTest, Biases) {
-  ASSERT_EQ(2, nn->biases.size());
-  EXPECT_EQ(3, nn->biases[0].rows());
-  EXPECT_EQ(1, nn->biases[0].cols());
-  EXPECT_EQ(1, nn->biases[1].rows());
-  EXPECT_EQ(1, nn->biases[1].cols());
+TYPED_TEST(NetworkTest, Biases) {
+  ASSERT_EQ(2, nn.biases.size());
+  EXPECT_EQ(3, nn.biases[0].rows());
+  EXPECT_EQ(1, nn.biases[0].cols());
+  EXPECT_EQ(1, nn.biases[1].rows());
+  EXPECT_EQ(1, nn.biases[1].cols());
 }
 
-TEST_F(NetworkTest, Weights) {
-  ASSERT_EQ(2, nn->weights.size());
-  EXPECT_EQ(3, nn->weights[0].rows());
-  EXPECT_EQ(2, nn->weights[0].cols());
-  EXPECT_EQ(1, nn->weights[1].rows());
-  EXPECT_EQ(3, nn->weights[1].cols());
+TYPED_TEST(NetworkTest, Weights) {
+  ASSERT_EQ(2, nn.weights.size());
+  EXPECT_EQ(3, nn.weights[0].rows());
+  EXPECT_EQ(2, nn.weights[0].cols());
+  EXPECT_EQ(1, nn.weights[1].rows());
+  EXPECT_EQ(3, nn.weights[1].cols());
 }
 
-TEST_F(NetworkTest, FeedForward) {
-  vector<double> result = nn->FeedForward(
-      vector<double> { t["feedforward.input1"], t["feedforward.input2"] });
+TYPED_TEST(NetworkTest, FeedForward) {
+  auto result = nn.FeedForward(Vector(2).Set({ t["feedforward.input1"],
+                                               t["feedforward.input2"] }));
   ASSERT_EQ(1, result.size());
   double precision = pow(10, -t["feedforward.output.precision"]);
-  EXPECT_NEAR(t["feedforward.output"], result[0], precision);
+  EXPECT_NEAR(t["feedforward.output"], result(0), precision);
 }
 
-TEST_F(NetworkTest, Sigmoid) {
-  VectorXd v(3);
-  v << t["sigmoid.input1"], t["sigmoid.input2"], t["sigmoid.input3"];
-  VectorXd res = nn->Sigmoid_(v);
+TYPED_TEST(NetworkTest, Sigmoid) {
+  auto v = Vector(3).Set({ t["sigmoid.input1"],
+                           t["sigmoid.input2"],
+                           t["sigmoid.input3"] });
+  auto res = nn.Sigmoid_(v);
   double precision1 = pow(10, -t["sigmoid.output1.precision"]);
   double precision2 = pow(10, -t["sigmoid.output2.precision"]);
   double precision3 = pow(10, -t["sigmoid.output3.precision"]);
@@ -101,12 +124,11 @@ TEST_F(NetworkTest, Sigmoid) {
   EXPECT_NEAR(t["sigmoid.output3"], res(2), precision3);
 }
 
-TEST_F(NetworkTest, SigmoidPrime) {
-  VectorXd v(3);
-  v << t["sigmoid_prime.input1"],
-       t["sigmoid_prime.input2"],
-       t["sigmoid_prime.input3"];
-  VectorXd res = nn->SigmoidPrime_(v);
+TYPED_TEST(NetworkTest, SigmoidPrime) {
+  auto v = Vector(3).Set({ t["sigmoid_prime.input1"],
+                           t["sigmoid_prime.input2"],
+                           t["sigmoid_prime.input3"] });
+  auto res = nn.SigmoidPrime_(v);
   double precision1 = pow(10, -t["sigmoid_prime.output1.precision"]);
   double precision2 = pow(10, -t["sigmoid_prime.output2.precision"]);
   double precision3 = pow(10, -t["sigmoid_prime.output3.precision"]);
@@ -115,15 +137,12 @@ TEST_F(NetworkTest, SigmoidPrime) {
   EXPECT_NEAR(t["sigmoid_prime.output3"], res(2), precision3);
 }
 
-TEST_F(NetworkTest, Backpropagation) {
-  VectorXd input(2);
-  input << 1, 2;
-  VectorXd expected(1);
-  expected << 0;
-  pair<vector<MatrixXd>, vector<VectorXd>> gradients =
-      nn->Backpropagation_(input, expected);
-  vector<MatrixXd> nabla_w = gradients.first;
-  vector<VectorXd> nabla_b = gradients.second;
+TYPED_TEST(NetworkTest, Backpropagation) {
+  auto input = Vector(2).Set({ 1, 2 });
+  auto expected = Vector(1).Set({ 0 });
+  auto gradients = nn.Backpropagation_(input, expected);
+  auto nabla_w = gradients.first;
+  auto nabla_b = gradients.second;
 
   // Make sure we've got the right number of gradient vectors
   ASSERT_EQ(2, nabla_w.size());
@@ -163,101 +182,54 @@ TEST_F(NetworkTest, Backpropagation) {
   EXPECT_NEAR(t["layer2.nabla_b0"], nabla_b[1](0, 0), precision);
 }
 
-TEST_F(NetworkTest, UpdateMiniBatch) {
-  labelled_eigen_data minibatch;
-  VectorXd x0(2);
-  x0 << t["minibatch.x00"], t["minibatch.x01"];
-  VectorXd y0(1);
-  y0 << t["minibatch.y0"];
+TYPED_TEST(NetworkTest, UpdateMiniBatch) {
+  auto minibatch = TrainingData();
+  auto x0 = Vector(2).Set({ t["minibatch.x00"], t["minibatch.x01"] });
+  auto y0 = Vector(1).Set({ t["minibatch.y0"] });
   minibatch.push_back(make_pair(x0, y0));
-  VectorXd x1(2);
-  x1 << t["minibatch.x10"], t["minibatch.x11"];
-  VectorXd y1(1);
-  y1 << t["minibatch.y1"];
+  auto x1 = Vector(2).Set({ t["minibatch.x10"], t["minibatch.x11"] });
+  auto y1 = Vector(1).Set({ t["minibatch.y1"] });
   minibatch.push_back(make_pair(x1, y1));
-  VectorXd x2(2);
-  x2 << t["minibatch.x20"], t["minibatch.x21"];
-  VectorXd y2(1);
-  y2 << t["minibatch.y2"];
+  auto x2 = Vector(2).Set({ t["minibatch.x20"], t["minibatch.x21"] });
+  auto y2 = Vector(1).Set({ t["minibatch.y2"] });
   minibatch.push_back(make_pair(x2, y2));
+
   double eta = t["minibatch.eta"];
   double precision = pow(10, -t["minibatch.precision"]);
-  nn->UpdateMiniBatch_(minibatch, eta);
+  nn.UpdateMiniBatch_(minibatch, eta);
 
   // First layer weights
-  EXPECT_NEAR(t["minibatch.layer1.w00"], nn->weights[0](0, 0), precision);
-  EXPECT_NEAR(t["minibatch.layer1.w01"], nn->weights[0](0, 1), precision);
-  EXPECT_NEAR(t["minibatch.layer1.w10"], nn->weights[0](1, 0), precision);
-  EXPECT_NEAR(t["minibatch.layer1.w11"], nn->weights[0](1, 1), precision);
-  EXPECT_NEAR(t["minibatch.layer1.w20"], nn->weights[0](2, 0), precision);
-  EXPECT_NEAR(t["minibatch.layer1.w21"], nn->weights[0](2, 1), precision);
+  EXPECT_NEAR(t["minibatch.layer1.w00"], nn.weights[0](0, 0), precision);
+  EXPECT_NEAR(t["minibatch.layer1.w01"], nn.weights[0](0, 1), precision);
+  EXPECT_NEAR(t["minibatch.layer1.w10"], nn.weights[0](1, 0), precision);
+  EXPECT_NEAR(t["minibatch.layer1.w11"], nn.weights[0](1, 1), precision);
+  EXPECT_NEAR(t["minibatch.layer1.w20"], nn.weights[0](2, 0), precision);
+  EXPECT_NEAR(t["minibatch.layer1.w21"], nn.weights[0](2, 1), precision);
 
   // Second layer weights
-  EXPECT_NEAR(t["minibatch.layer2.w00"], nn->weights[1](0, 0), precision);
-  EXPECT_NEAR(t["minibatch.layer2.w01"], nn->weights[1](0, 1), precision);
-  EXPECT_NEAR(t["minibatch.layer2.w02"], nn->weights[1](0, 2), precision);
+  EXPECT_NEAR(t["minibatch.layer2.w00"], nn.weights[1](0, 0), precision);
+  EXPECT_NEAR(t["minibatch.layer2.w01"], nn.weights[1](0, 1), precision);
+  EXPECT_NEAR(t["minibatch.layer2.w02"], nn.weights[1](0, 2), precision);
 
   // First layer biases
-  EXPECT_NEAR(t["minibatch.layer1.b0"], nn->biases[0](0), precision);
-  EXPECT_NEAR(t["minibatch.layer1.b1"], nn->biases[0](1), precision);
-  EXPECT_NEAR(t["minibatch.layer1.b2"], nn->biases[0](2), precision);
+  EXPECT_NEAR(t["minibatch.layer1.b0"], nn.biases[0](0), precision);
+  EXPECT_NEAR(t["minibatch.layer1.b1"], nn.biases[0](1), precision);
+  EXPECT_NEAR(t["minibatch.layer1.b2"], nn.biases[0](2), precision);
 
   // Second layer biases
-  EXPECT_NEAR(t["minibatch.layer2.b0"], nn->biases[1](0), precision);
+  EXPECT_NEAR(t["minibatch.layer2.b0"], nn.biases[1](0), precision);
 }
 
-TEST_F(NetworkTest, SGD) {
-  // Generate training data
-  labelled_data training_data;
-  for(int i = 0; i < int(t["sgd.input_range_x"]); i++) {
-    for(int j = 0; j < int(t["sgd.input_range_y"]); j++) {
-      vector<double> x { (double) i, (double) j };
-      vector<double> y { (double) (i + j) };
-      training_data.push_back(make_pair(x, y));
-    }
-  }
-
-  // Run training
-  nn->SGD(training_data,
-          int(t["sgd.epochs"]),
-          int(t["sgd.minibatch_size"]),
-          t["sgd.eta"]);
-
-  double precision = pow(10, -t["sgd.precision"]);
-
-  // First layer weights
-  EXPECT_NEAR(t["sgd.layer1.w00"], nn->weights[0](0, 0), precision);
-  EXPECT_NEAR(t["sgd.layer1.w01"], nn->weights[0](0, 1), precision);
-  EXPECT_NEAR(t["sgd.layer1.w10"], nn->weights[0](1, 0), precision);
-  EXPECT_NEAR(t["sgd.layer1.w11"], nn->weights[0](1, 1), precision);
-  EXPECT_NEAR(t["sgd.layer1.w20"], nn->weights[0](2, 0), precision);
-  EXPECT_NEAR(t["sgd.layer1.w21"], nn->weights[0](2, 1), precision);
-
-  // Second layer weights
-  EXPECT_NEAR(t["sgd.layer2.w00"], nn->weights[1](0, 0), precision);
-  EXPECT_NEAR(t["sgd.layer2.w01"], nn->weights[1](0, 1), precision);
-  EXPECT_NEAR(t["sgd.layer2.w02"], nn->weights[1](0, 2), precision);
-
-  // First layer biases
-  EXPECT_NEAR(t["sgd.layer1.b0"], nn->biases[0](0), precision);
-  EXPECT_NEAR(t["sgd.layer1.b1"], nn->biases[0](1), precision);
-  EXPECT_NEAR(t["sgd.layer1.b2"], nn->biases[0](2), precision);
-
-  // Second layer biases
-  EXPECT_NEAR(t["sgd.layer2.b0"], nn->biases[1](0), precision);
-}
-
-TEST_F(NetworkTest, GetMiniBatch) {
-  labelled_eigen_data data;
+TYPED_TEST(NetworkTest, GetMiniBatch) {
+  auto data = TrainingData();
   for(int i = 0; i < 20; i++) {
-    VectorXd x(1), y(1);
-    x << i;
-    y << i;
+    auto x = Vector(1).Set({ (double) i });
+    auto y = Vector(1).Set({ (double) i });
     data.push_back(make_pair(x, y));
   }
 
   for(int n = 0; n < 5; n++) {
-    labelled_eigen_data mini_batch = nn->GetMiniBatch_(data, 5, n);
+    auto mini_batch = nn.GetMiniBatch_(data, 5, n);
     if(n < 4) {
       ASSERT_EQ(5, mini_batch.size());
       EXPECT_EQ(5 * n,     mini_batch[0].first(0));
@@ -271,20 +243,59 @@ TEST_F(NetworkTest, GetMiniBatch) {
   }
 }
 
-TEST_F(NetworkTest, MockShuffle) {
-  labelled_eigen_data data;
+TYPED_TEST(NetworkTest, MockShuffle) {
+  auto data = TrainingData();
   for(int i = 0; i < 3; i++) {
-    VectorXd x(1), y(1);
-    x << i;
-    y << i;
-    data.push_back(make_pair(x, y));
+    data.push_back(make_pair(Vector(1).Set({ (double) i }),
+                             Vector(1).Set({ (double) i })));
   }
   EXPECT_EQ(0, data[0].first(0));
   EXPECT_EQ(1, data[1].first(0));
   EXPECT_EQ(2, data[2].first(0));
 
-  nn->Shuffle_(data);
+  nn.Shuffle_(data);
   EXPECT_EQ(1, data[0].first(0));
   EXPECT_EQ(2, data[1].first(0));
   EXPECT_EQ(0, data[2].first(0));
+}
+
+TYPED_TEST(NetworkTest, SGD) {
+  // Generate training data
+  auto training_data = TrainingData();
+  for(int i = 0; i < int(t["sgd.input_range_x"]); i++) {
+    for(int j = 0; j < int(t["sgd.input_range_y"]); j++) {
+      training_data.push_back(
+          make_pair(Vector(2).Set({ (double) i, (double) j }),
+                    Vector(1).Set({ (double) i + j })));
+    }
+  }
+
+  // Run training
+  nn.SGD(training_data,
+         int(t["sgd.epochs"]),
+         int(t["sgd.minibatch_size"]),
+         t["sgd.eta"]);
+
+  double precision = pow(10, -t["sgd.precision"]);
+
+  // First layer weights
+  EXPECT_NEAR(t["sgd.layer1.w00"], nn.weights[0](0, 0), precision);
+  EXPECT_NEAR(t["sgd.layer1.w01"], nn.weights[0](0, 1), precision);
+  EXPECT_NEAR(t["sgd.layer1.w10"], nn.weights[0](1, 0), precision);
+  EXPECT_NEAR(t["sgd.layer1.w11"], nn.weights[0](1, 1), precision);
+  EXPECT_NEAR(t["sgd.layer1.w20"], nn.weights[0](2, 0), precision);
+  EXPECT_NEAR(t["sgd.layer1.w21"], nn.weights[0](2, 1), precision);
+
+  // Second layer weights
+  EXPECT_NEAR(t["sgd.layer2.w00"], nn.weights[1](0, 0), precision);
+  EXPECT_NEAR(t["sgd.layer2.w01"], nn.weights[1](0, 1), precision);
+  EXPECT_NEAR(t["sgd.layer2.w02"], nn.weights[1](0, 2), precision);
+
+  // First layer biases
+  EXPECT_NEAR(t["sgd.layer1.b0"], nn.biases[0](0), precision);
+  EXPECT_NEAR(t["sgd.layer1.b1"], nn.biases[0](1), precision);
+  EXPECT_NEAR(t["sgd.layer1.b2"], nn.biases[0](2), precision);
+
+  // Second layer biases
+  EXPECT_NEAR(t["sgd.layer2.b0"], nn.biases[1](0), precision);
 }

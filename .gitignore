@@ -5,9 +5,8 @@ data/train-images-idx3-ubyte
 data/train-labels-idx1-ubyte
 
 # Binaries
-src/cc/matrix_test
 src/cc/nn
-src/cc/network_test
+src/cc/tests
 *.o
 *.d
 *.pyc

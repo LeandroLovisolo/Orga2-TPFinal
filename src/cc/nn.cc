@@ -1,11 +1,15 @@
 #include <iostream>
-#include <Eigen/Dense>
 
 #include "matrix.h"
 #include "mnist_loader.h"
 #include "network.h"
+#include "optparse.h"
 
-using namespace Eigen;
+constexpr char kTrainImagesPath[] = "../../data/train-images-idx3-ubyte";
+constexpr char kTrainLabelsPath[] = "../../data/train-labels-idx1-ubyte";
+constexpr char kTestImagesPath[] = "../../data/t10k-images-idx3-ubyte";
+constexpr char kTestLabelsPath[] = "../../data/t10k-labels-idx1-ubyte";
+
 using namespace std;
 
 template<class Matrix, class Vector=Matrix>
@@ -23,27 +27,42 @@ TrainingData<Vector> to_training_data(const LabelledMistData& mnist_data) {
 }
 
 template<class Matrix, class Vector=Matrix>
-void TrainNetwork() {
-  MnistLoader loader("../../data/train-images-idx3-ubyte",
-                     "../../data/train-labels-idx1-ubyte",
-                     "../../data/t10k-images-idx3-ubyte",
-                     "../../data/t10k-labels-idx1-ubyte");
-
-  cout << "Loading data..." << endl;
+void TrainNetwork(const string& matrix_impl_name) {
+  MnistLoader loader(kTrainImagesPath, kTrainLabelsPath,
+                     kTestImagesPath, kTestLabelsPath);
 
   TrainingData<Vector> training_data =
       to_training_data<Matrix>(loader.train_data());
   TrainingData<Vector> test_data =
       to_training_data<Matrix>(loader.test_data());
 
+  cout << "Training with matrix backend: " << matrix_impl_name << endl;
   Network<Matrix> nn(vector<int> { 784, 30, 10 });
-
-  cout << "Starting training..." << endl;
   nn.SGD(training_data, test_data, 100, 50, 0.1);
   cout << "Training finished." << endl;
 }
 
-int main() {
-  TrainNetwork<EigenMatrix>();
+int main(int argc, char **argv) {
+  optparse::OptionParser parser =
+    optparse::OptionParser().description("Neural network training launcher");
+
+  parser.add_option("-m", "--matrix").dest("matrix")
+    .help("Matrix implementation to be used. "
+          "Possible values: NaiveMatrix, EigenMatrix (default).")
+    .set_default("EigenMatrix")
+    .metavar("MATRIX_IMPL");
+
+  const optparse::Values options = parser.parse_args(argc, argv);
+  string impl = options["matrix"];
+
+  if(impl == "NaiveMatrix") {
+    TrainNetwork<NaiveMatrix>(impl);
+  } else if(impl == "EigenMatrix") {
+    TrainNetwork<EigenMatrix>(impl);
+  } else {
+    cerr << "Invalid MATRIX_IMPL. Run with --help to see valid options."
+         << endl;
+  }
+
   return 0;
 }

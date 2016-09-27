@@ -17,6 +17,8 @@ template<class Matrix, class Vector=Matrix>
 class MockNetwork : public Network<Matrix, Vector> {
  public:
   MockNetwork(const std::vector<int> &sizes) : Network<Matrix, Vector>(sizes) {}
+
+  // Deterministic Shuffle_() implementation
   void Shuffle_(TrainingData<Vector>& data) {
     if(data.size() == 0) return;
     auto first = data[0];
@@ -68,7 +70,7 @@ class NetworkTest : public ::testing::Test {
   unordered_map<string, double> t;
 };
 
-typedef ::testing::Types<EigenMatrix> MatrixTypes;
+typedef ::testing::Types<NaiveMatrix, EigenMatrix> MatrixTypes;
 
 TYPED_TEST_CASE(NetworkTest, MatrixTypes);
 

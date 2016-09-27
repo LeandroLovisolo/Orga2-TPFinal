@@ -1,15 +1,12 @@
 MAIN            = nn
 MAIN_SRC        = nn.cc matrix.cc mnist_loader.cc
 
-NN_TEST         = network_test
-NN_TEST_SRC     = network_test.cc matrix.cc
-
-MATRIX_TEST     = matrix_test
-MATRIX_TEST_SRC = matrix_test.cc matrix.cc
+TESTS           = tests
+TESTS_SRC       = matrix.cc matrix_test.cc network_test.cc
 
 TEST_DEPS       = gtest-all.o gmock-all.o gtest_main.o
 
-BINARIES        = $(MAIN) $(NN_TEST) $(MATRIX_TEST)
+BINARIES        = $(MAIN) $(TESTS)
 
 ################################################################################
 
@@ -45,10 +42,7 @@ all: data $(BINARIES)
 $(MAIN): $(MAIN_SRC:.cc=.o)
 	$(LD) $(LDFLAGS) -o $@ $^
 
-$(NN_TEST): $(NN_TEST_SRC:.cc=.o) $(TEST_DEPS)
-	$(LD) $(LDFLAGS) -pthread -o $@ $^
-
-$(MATRIX_TEST): $(MATRIX_TEST_SRC:.cc=.o) $(TEST_DEPS)
+$(TESTS): $(TESTS_SRC:.cc=.o) $(TEST_DEPS)
 	$(LD) $(LDFLAGS) -pthread -o $@ $^
 
 %.o: %.cc

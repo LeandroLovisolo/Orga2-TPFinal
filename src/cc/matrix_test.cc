@@ -27,10 +27,7 @@ class MatrixTest : public ::testing::Test {
   }
 };
 
-// typedef ::testing::Types<NaiveMatrix,
-//                          EigenMatrix> MatrixTypes;
-
-typedef ::testing::Types<EigenMatrix> MatrixTypes;
+typedef ::testing::Types<NaiveMatrix, EigenMatrix> MatrixTypes;
 
 TYPED_TEST_CASE(MatrixTest, MatrixTypes);
 
@@ -72,8 +69,7 @@ TYPED_TEST(MatrixTest, AccessorVector) {
 }
 
 TYPED_TEST(MatrixTest, Set) {
-  auto m = Matrix(2, 2).Set({ 1, 2,
-                              3, 4 });
+  auto m = Matrix(2, 2).Set({ 1, 2, 3, 4 });
   EXPECT_EQ(1, m(0, 0));
   EXPECT_EQ(2, m(0, 1));
   EXPECT_EQ(3, m(1, 0));
@@ -182,4 +178,25 @@ TYPED_TEST(MatrixTest, ApplyFn) {
   auto m = Matrix(2, 2).Set({ 1, 2, 3, 4 });
   auto n = Matrix(2, 2).Set({ 1, 4, 9, 16 });
   EXPECT_EQ(m.ApplyFn(ptr_fun(square)), n);
+}
+
+template <typename M>
+void PrintMatrix(const BaseMatrix<M>& m, ostream* os) {
+  string s = "\n";
+  for(uint i = 0; i < m.rows(); i++) {
+    if(i > 0) s += "\n";
+    for(uint j = 0; j < m.cols(); j++) {
+      if(j > 0) s += " ";
+      s += to_string(m(i, j));
+    }
+  }
+  *os << s;
+}
+
+void PrintTo(const NaiveMatrix& m, ::std::ostream* os) {
+  PrintMatrix<NaiveMatrix>(m, os);
+}
+
+void PrintTo(const EigenMatrix& m, ::std::ostream* os) {
+  PrintMatrix<EigenMatrix>(m, os);
 }

@@ -12,20 +12,138 @@ using namespace std;
 // NaiveMatrix                                  //
 //////////////////////////////////////////////////
 
-/*
+NaiveMatrix::NaiveMatrix(uint size)
+    : BaseMatrix(size), m_(size, 1) {}
+
 NaiveMatrix::NaiveMatrix(uint rows, uint cols)
    : BaseMatrix(rows, cols), m_(rows * cols, 0) {}
 
-double& NaiveMatrix::operator()(uint i, uint j) {
-  assert(i < rows_);
-  assert(i < cols_);
-  return m_[cols_ * j + i];
+NaiveMatrix::NaiveMatrix(const NaiveMatrix& other)
+    : BaseMatrix(other.rows_, other.cols_), m_(other.m_) {}
+
+void NaiveMatrix::operator=(const NaiveMatrix& other) {
+  rows_ = other.rows_;
+  cols_ = other.cols_;
+  m_ = other.m_;
 }
 
-NaiveMatrix& NaiveMatrix::operator+(const BaseMatrix& other) {
-  return NaiveMatrix(1, 1);
+double& NaiveMatrix::operator()(uint i, uint j) {
+  assert(i < rows_);
+  assert(j < cols_);
+  return m_[cols_ * i + j];
 }
-*/
+
+double NaiveMatrix::operator()(uint i, uint j) const {
+  assert(i < rows_);
+  assert(j < cols_);
+  return m_[cols_ * i + j];
+}
+
+double& NaiveMatrix::operator()(uint i) {
+  assert(cols_ == 1);
+  assert(i < rows_);
+  return m_[i];
+}
+
+double NaiveMatrix::operator()(uint i) const {
+  assert(cols_ == 1);
+  assert(i < rows_);
+  return m_[i];
+}
+
+NaiveMatrix NaiveMatrix::operator+(const NaiveMatrix& other) const {
+  NaiveMatrix res(*this);
+  res += other;
+  return res;
+}
+
+void NaiveMatrix::operator+=(const NaiveMatrix& other) {
+  assert(rows_ == other.rows_);
+  assert(cols_ == other.cols_);
+  for(uint i = 0; i < rows_ * cols_; i++) {
+    m_[i] += other.m_[i];
+  }
+}
+
+NaiveMatrix NaiveMatrix::operator-(const NaiveMatrix& other) const {
+  NaiveMatrix res(*this);
+  res -= other;
+  return res;
+}
+
+void NaiveMatrix::operator-=(const NaiveMatrix& other) {
+  assert(rows_ == other.rows_);
+  assert(cols_ == other.cols_);
+  for(uint i = 0; i < rows_ * cols_; i++) {
+    m_[i] -= other.m_[i];
+  }
+}
+
+NaiveMatrix NaiveMatrix::operator*(const NaiveMatrix& other) const {
+  NaiveMatrix res(*this);
+  res *= other;
+  return res;
+}
+
+void NaiveMatrix::operator*=(const NaiveMatrix& other) {
+  assert(cols_ == other.rows_);
+  uint new_rows = rows_;
+  uint new_cols = other.cols_;
+  vector<double> new_m(new_rows * new_cols, 0.);
+  for(uint i = 0; i < new_rows; i++) {
+    for(uint j = 0; j < new_cols; j++) {
+      for(uint k = 0; k < cols_; k++) {
+        new_m[new_cols * i + j] += operator()(i, k) * other(k, j);
+      }
+    }
+  }
+  m_ = new_m;
+  rows_ = new_rows;
+  cols_ = new_cols;
+}
+
+NaiveMatrix NaiveMatrix::operator*(double c) const {
+  NaiveMatrix res(*this);
+  res *= c;
+  return res;
+}
+
+void NaiveMatrix::operator*=(double c) {
+  for(uint i = 0; i < m_.size(); i++) {
+    m_[i] *= c;
+  }
+}
+
+NaiveMatrix NaiveMatrix::CoeffWiseProduct(const NaiveMatrix& other) const {
+  assert(rows_ == other.rows_);
+  assert(cols_ == other.cols_);
+  NaiveMatrix res(*this);
+  for(uint i = 0; i < res.m_.size(); i++) {
+    res.m_[i] *= other.m_[i];
+  }
+  return res;
+}
+
+NaiveMatrix NaiveMatrix::Transpose() const {
+  NaiveMatrix res(cols_, rows_);
+  for(uint i = 0; i < rows_; i++) {
+    for(uint j = 0; j < cols_; j++) {
+      res(j, i) = operator()(i, j);
+    }
+  }
+  return res;
+}
+
+NaiveMatrix NaiveMatrix::ApplyFn(
+    const pointer_to_unary_function<double, double>& fn) const {
+  NaiveMatrix res(*this);
+  for(uint i = 0; i < rows_; i++) {
+    for(uint j = 0; j < cols_; j++) {
+      res(i, j) = fn(res(i, j));
+    }
+  }
+  return res;
+}
 
 //////////////////////////////////////////////////
 // EigenMatrix                                  //
@@ -133,16 +251,4 @@ EigenMatrix EigenMatrix::ApplyFn(
   EigenMatrix res(*this);
   res.m_ = res.m_.unaryExpr(fn);
   return res;
-}
-
-void PrintTo(const EigenMatrix& m, ::std::ostream* os) {
-  string s = "\n";
-  for(uint i = 0; i < m.rows(); i++) {
-    if(i > 0) s += "\n";
-    for(uint j = 0; j < m.cols(); j++) {
-      if(j > 0) s += " ";
-      s += to_string(m(i, j));
-    }
-  }
-  *os << s;
 }

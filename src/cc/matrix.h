@@ -131,17 +131,57 @@ BaseMatrix<Matrix>& BaseMatrix<Matrix>::Random() {
   return *this;
 }
 
-/*
-class NaiveMatrix : public BaseMatrix {
+class NaiveMatrix : public BaseMatrix<NaiveMatrix> {
  public:
+  NaiveMatrix(uint size);
   NaiveMatrix(uint rows, uint cols);
+  NaiveMatrix(const NaiveMatrix& other);
+
+  // Initializers
+  void operator=(const NaiveMatrix& other);
+  NaiveMatrix& Set(std::initializer_list<double> list) {
+    BaseMatrix<NaiveMatrix>::Set(list);
+    return *this;
+  }
+  NaiveMatrix& Zeros() { BaseMatrix<NaiveMatrix>::Zeros(); return *this; }
+  NaiveMatrix& Ones() { BaseMatrix<NaiveMatrix>::Ones(); return *this; }
+  NaiveMatrix& Random() { BaseMatrix<NaiveMatrix>::Random(); return *this; }
+
+  // Coefficient accessors
   double& operator()(uint i, uint j);
-  // NaiveMatrix& operator+(const BaseMatrix& other);
+  double operator()(uint i, uint j) const;
+  double& operator()(uint i);  // vector only
+  double operator()(uint i) const;  // vector only
+
+  // Addition
+  NaiveMatrix operator+(const NaiveMatrix& other) const;
+  void operator+=(const NaiveMatrix& other);
+
+  // Subtraction
+  NaiveMatrix operator-(const NaiveMatrix& other) const;
+  void operator-=(const NaiveMatrix& other);
+
+  // Product
+  NaiveMatrix operator*(const NaiveMatrix& other) const;
+  void operator*=(const NaiveMatrix& other);
+
+  // Scalar product
+  NaiveMatrix operator*(double c) const;
+  void operator*=(double c);
+
+  // Coefficient-wise product
+  NaiveMatrix CoeffWiseProduct(const NaiveMatrix& other) const;
+
+  // Transpose
+  NaiveMatrix Transpose() const;
+
+  // Coefficient-wise application of unary function
+  NaiveMatrix ApplyFn(
+      const std::pointer_to_unary_function<double, double>& fn) const;
 
  private:
   std::vector<double> m_;
 };
-*/
 
 class EigenMatrix : public BaseMatrix<EigenMatrix> {
  public:
@@ -194,7 +234,5 @@ class EigenMatrix : public BaseMatrix<EigenMatrix> {
  private:
   Eigen::MatrixXd m_;
 };
-
-void PrintTo(const EigenMatrix& m, ::std::ostream* os);
 
 #endif // __MATRIX_H__

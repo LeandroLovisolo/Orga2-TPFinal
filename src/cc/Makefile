@@ -15,16 +15,18 @@ EIGEN_DIR = ../../lib/eigen
 GTEST_DIR = ../../lib/googletest/googletest
 GMOCK_DIR = ../../lib/googletest/googlemock
 
-CXX       = clang++
-CXXFLAGS := $(CXXFLAGS) -std=c++14 \
-            -I $(LIB_DIR) \
-            -I $(EIGEN_DIR) \
-            -isystem $(GTEST_DIR)/include \
-            -isystem $(GMOCK_DIR)/include \
-            -I $(GTEST_DIR) -I $(GMOCK_DIR) \
-            -O3 -fopenmp
-LD        = $(CXX)
-LDFLAGS   = $(CXXFLAGS)
+CXX        = clang++
+CXXFLAGS  := $(CXXFLAGS) -std=c++14 \
+             -I $(LIB_DIR) \
+             -I $(EIGEN_DIR) \
+             -isystem $(GTEST_DIR)/include \
+             -isystem $(GMOCK_DIR)/include \
+             -I $(GTEST_DIR) -I $(GMOCK_DIR) \
+             -O3
+NASM       = nasm
+NASM_FLAGS = -f elf64 -g -F dwarf
+LD         = $(CXX)
+LDFLAGS    = $(CXXFLAGS)
 
 ################################################################################
 
@@ -39,15 +41,18 @@ TEST_LABELS = ../../data/t10k-labels-idx1-ubyte
 
 all: data $(BINARIES)
 
-$(MAIN): $(MAIN_SRC:.cc=.o)
+$(MAIN): $(MAIN_SRC:.cc=.o) simd_matrix.o
 	$(LD) $(LDFLAGS) -o $@ $^
 
-$(TESTS): $(TESTS_SRC:.cc=.o) $(TEST_DEPS)
+$(TESTS): $(TESTS_SRC:.cc=.o) simd_matrix.o $(TEST_DEPS)
 	$(LD) $(LDFLAGS) -pthread -o $@ $^
 
 %.o: %.cc
 	$(CXX) $(CXXFLAGS) -M -MF $(patsubst %.o, %.d, $@) $<
 	$(CXX) $(CXXFLAGS) -c $<
+
+simd_matrix.o: simd_matrix.asm
+	$(NASM) $(NASM_FLAGS) -o $@ $<
 
 gtest-all.o:
 	$(CXX) $(CXXFLAGS) -c ${GTEST_DIR}/src/gtest-all.cc -o gtest-all.o

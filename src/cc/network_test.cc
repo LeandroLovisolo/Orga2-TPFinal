@@ -70,7 +70,7 @@ class NetworkTest : public ::testing::Test {
   unordered_map<string, float> t;
 };
 
-typedef ::testing::Types<NaiveMatrix, EigenMatrix> MatrixTypes;
+typedef ::testing::Types<NaiveMatrix, SimdMatrix, EigenMatrix> MatrixTypes;
 
 TYPED_TEST_CASE(NetworkTest, MatrixTypes);
 

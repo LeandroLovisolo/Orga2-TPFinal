@@ -36,7 +36,7 @@ void TrainNetwork(const string& matrix_impl_name) {
   TrainingData<Vector> test_data =
       to_training_data<Matrix>(loader.test_data());
 
-  cout << "Training with matrix backend: " << matrix_impl_name << endl;
+  cout << "Training with matrix implementation: " << matrix_impl_name << endl;
   Network<Matrix> nn(vector<int> { 784, 30, 10 });
   nn.SGD(training_data, test_data, 100, 50, 0.1);
   cout << "Training finished." << endl;
@@ -47,17 +47,19 @@ int main(int argc, char **argv) {
     optparse::OptionParser().description("Neural network training launcher");
 
   parser.add_option("-m", "--matrix").dest("matrix")
-    .help("Matrix implementation to be used. "
-          "Possible values: NaiveMatrix, EigenMatrix (default).")
-    .set_default("EigenMatrix")
+    .help("Matrix implementation to be used. Possible values: "
+          "naive, simd, eigen (default).")
+    .set_default("eigen")
     .metavar("MATRIX_IMPL");
 
   const optparse::Values options = parser.parse_args(argc, argv);
   string impl = options["matrix"];
 
-  if(impl == "NaiveMatrix") {
+  if(impl == "naive") {
     TrainNetwork<NaiveMatrix>(impl);
-  } else if(impl == "EigenMatrix") {
+  } else if(impl == "simd") {
+    TrainNetwork<SimdMatrix>(impl);
+  } else if(impl == "eigen") {
     TrainNetwork<EigenMatrix>(impl);
   } else {
     cerr << "Invalid MATRIX_IMPL. Run with --help to see valid options."

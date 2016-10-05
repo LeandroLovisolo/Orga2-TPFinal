@@ -192,6 +192,62 @@ class NaiveMatrix : public BaseMatrix<NaiveMatrix> {
 };
 
 //////////////////////////////////////////////////
+// SimdMatrix                                   //
+//////////////////////////////////////////////////
+
+class SimdMatrix : public BaseMatrix<SimdMatrix> {
+ public:
+  SimdMatrix(uint size);
+  SimdMatrix(uint rows, uint cols);
+  SimdMatrix(const SimdMatrix& other);
+
+  // Initializers
+  void operator=(const SimdMatrix& other);
+  SimdMatrix& Set(std::initializer_list<float> list) {
+    BaseMatrix<SimdMatrix>::Set(list);
+    return *this;
+  }
+  SimdMatrix& Zeros() { BaseMatrix<SimdMatrix>::Zeros(); return *this; }
+  SimdMatrix& Ones() { BaseMatrix<SimdMatrix>::Ones(); return *this; }
+  SimdMatrix& Random() { BaseMatrix<SimdMatrix>::Random(); return *this; }
+
+  // Coefficient accessors
+  float& operator()(uint i, uint j);
+  float operator()(uint i, uint j) const;
+  float& operator()(uint i);  // vector only
+  float operator()(uint i) const;  // vector only
+
+  // Addition
+  SimdMatrix operator+(const SimdMatrix& other) const;
+  void operator+=(const SimdMatrix& other);
+
+  // Subtraction
+  SimdMatrix operator-(const SimdMatrix& other) const;
+  void operator-=(const SimdMatrix& other);
+
+  // Product
+  SimdMatrix operator*(const SimdMatrix& other) const;
+  void operator*=(const SimdMatrix& other);
+
+  // Scalar product
+  SimdMatrix operator*(float c) const;
+  void operator*=(float c);
+
+  // Coefficient-wise product
+  SimdMatrix CoeffWiseProduct(const SimdMatrix& other) const;
+
+  // Transpose
+  SimdMatrix Transpose() const;
+
+  // Coefficient-wise application of unary function
+  SimdMatrix ApplyFn(
+      const std::pointer_to_unary_function<float, float>& fn) const;
+
+ private:
+  std::vector<float> m_;
+};
+
+//////////////////////////////////////////////////
 // EigenMatrix                                  //
 //////////////////////////////////////////////////
 
@@ -247,4 +303,4 @@ class EigenMatrix : public BaseMatrix<EigenMatrix> {
   Eigen::MatrixXf m_;
 };
 
-#endif // __MATRIX_H__
+#endif  // __MATRIX_H__

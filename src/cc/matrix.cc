@@ -91,10 +91,11 @@ void NaiveMatrix::operator*=(const NaiveMatrix& other) {
   uint new_rows = rows_;
   uint new_cols = other.cols_;
   vector<float> new_m(new_rows * new_cols, 0.);
+  NaiveMatrix transpose = other.Transpose();
   for(uint i = 0; i < new_rows; i++) {
     for(uint j = 0; j < new_cols; j++) {
       for(uint k = 0; k < cols_; k++) {
-        new_m[new_cols * i + j] += operator()(i, k) * other(k, j);
+        new_m[new_cols * i + j] += operator()(i, k) * transpose(j, k);
       }
     }
   }

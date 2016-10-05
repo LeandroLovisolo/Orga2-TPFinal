@@ -2,7 +2,7 @@ MAIN            = nn
 MAIN_SRC        = nn.cc matrix.cc mnist_loader.cc
 
 TESTS           = tests
-TESTS_SRC       = matrix.cc matrix_test.cc network_test.cc
+TESTS_SRC       = matrix.cc matrix_test.cc simd_matrix_test.cc network_test.cc
 
 TEST_DEPS       = gtest-all.o gmock-all.o gtest_main.o
 

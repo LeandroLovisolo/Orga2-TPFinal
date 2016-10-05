@@ -269,4 +269,4 @@ int Network<Matrix, Vector>::Evaluate_(const TrainingData<Vector>& test_data) {
   return total;
 }
 
-#endif // __NETWORK_H__
+#endif  // __NETWORK_H__

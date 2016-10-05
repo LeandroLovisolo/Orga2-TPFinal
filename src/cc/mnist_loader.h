@@ -30,4 +30,4 @@ class MnistLoader {
   LabelledMistData test_data_;
 };
 
-#endif // __MNIST_LOADER_H__
+#endif  // __MNIST_LOADER_H__

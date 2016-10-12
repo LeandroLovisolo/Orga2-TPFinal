@@ -20,6 +20,7 @@ class Network {
            int epochs, int mini_batch_size, float eta);
   void SGD(const TrainingData<Vector>& training_data,
            const TrainingData<Vector>& test_data,
+           const std::string& stats_file,
            int epochs, int mini_batch_size, float eta);
 
   int num_layers;
@@ -192,23 +193,28 @@ void Network<Matrix, Vector>::Shuffle_(TrainingData<Vector>& data) {
 template<class Matrix, class Vector>
 void Network<Matrix, Vector>::SGD(const TrainingData<Vector>& training_data,
                                   int epochs, int mini_batch_size, float eta) {
-  SGD(training_data, TrainingData<Vector>(), epochs, mini_batch_size, eta);
+  SGD(training_data, TrainingData<Vector>(), "", epochs, mini_batch_size, eta);
 }
 
 template<class Matrix, class Vector>
 void Network<Matrix, Vector>::SGD(const TrainingData<Vector>& training_data,
                                   const TrainingData<Vector>& test_data,
+                                  const std::string& stats_file,
                                   int epochs, int mini_batch_size, float eta) {
+  using std::chrono::steady_clock;
+  using std::chrono::duration_cast;
+  using std::chrono::microseconds;
+  using std::chrono::seconds;
+
   // Local copy of training data
   TrainingData<Vector> shuffled_training_data(training_data);
+
+  // Statistics
+  steady_clock::time_point total_t0 = steady_clock::now();
 
   for(int i = 0; i < epochs; i++) {
     // Shuffle local copy of training data
     Shuffle_(shuffled_training_data);
-
-    using std::chrono::steady_clock;
-    using std::chrono::duration_cast;
-    using std::chrono::microseconds;
 
     // Iterate over all minibatches
     steady_clock::time_point t0 = steady_clock::now();
@@ -231,7 +237,7 @@ void Network<Matrix, Vector>::SGD(const TrainingData<Vector>& training_data,
           shuffled_training_data.begin() + j,
           shuffled_training_data.begin() +
               std::min(j + mini_batch_size,
-                      (int) shuffled_training_data.size()));
+                       (int) shuffled_training_data.size()));
 
       // Run gradient descent on current minibatch
       UpdateMiniBatch_(mini_batch, eta);
@@ -243,6 +249,18 @@ void Network<Matrix, Vector>::SGD(const TrainingData<Vector>& training_data,
       std::cout << "\r[Epoch " << (i + 1) << "] "
                 << accuracy << "\% accuracy on test data." << std::endl;
     }
+  }
+
+  // Statistics
+  auto total_t = duration_cast<seconds>(steady_clock::now() - total_t0).count();
+  auto epoch_avg = (double) total_t / epochs;
+  std::cout << "Total training time: " << total_t << std::endl
+            << "Average epoch time: " << epoch_avg << std::endl;
+  if(!stats_file.empty()) {
+    std::ofstream file(stats_file);
+    file << "total_training_time: " << total_t << std::endl
+         << "avg_epoch_time: " << epoch_avg << std::endl;
+    file.close();
   }
 }
 

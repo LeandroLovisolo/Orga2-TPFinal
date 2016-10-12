@@ -5,6 +5,7 @@
 #include <chrono>
 #include <cmath>
 #include <iostream>
+#include <sstream>
 #include <vector>
 #include <utility>
 
@@ -15,6 +16,7 @@ template<class Matrix, class Vector=Matrix>
 class Network {
  public:
   Network(const std::vector<int> &sizes);
+  Network(const std::string& checkpoint);
   Vector FeedForward(const Vector& input);
   void SGD(const TrainingData<Vector>& training_data,
            int epochs, int mini_batch_size, float eta);
@@ -22,6 +24,7 @@ class Network {
            const TrainingData<Vector>& test_data,
            const std::string& stats_file,
            int epochs, int mini_batch_size, float eta);
+  std::string SaveCheckpoint();
 
   int num_layers;
   std::vector<int> sizes;
@@ -29,6 +32,7 @@ class Network {
   std::vector<Vector> biases;
 
   // NOT PART OF PUBLIC API - METHODS BELOW MARKED PUBLIC FOR TESTING PURPOSES
+  void LoadCheckpoint_(const std::string& checkpoint);
   Vector Sigmoid_(const Vector& input);
   Vector SigmoidPrime_(const Vector& input);
   std::pair<std::vector<Matrix>, std::vector<Vector>> Backpropagation_(
@@ -48,7 +52,7 @@ Network<Matrix, Vector>::Network(const std::vector<int> &sizes)
 
   // Initialize bias vectors
   for(int i = 1; i < num_layers; i++) {
-    biases.push_back(Vector(sizes[i], 1));
+    biases.push_back(Vector(sizes[i]));
     biases.back().Random();
   }
 
@@ -57,6 +61,68 @@ Network<Matrix, Vector>::Network(const std::vector<int> &sizes)
     weights.push_back(Matrix(sizes[i+1], sizes[i]));
     weights.back().Random();
   }
+}
+
+template<class Matrix, class Vector>
+Network<Matrix, Vector>::Network(const std::string& checkpoint) {
+  LoadCheckpoint_(checkpoint);
+}
+
+template<class Matrix, class Vector>
+void Network<Matrix, Vector>::LoadCheckpoint_(const std::string& checkpoint) {
+  std::stringstream ss(checkpoint);
+
+  // Number of layers
+  ss >> num_layers;
+
+  // Layer sizes
+  sizes = std::vector<int>(num_layers);
+  for(int i = 0; i < num_layers; i++) ss >> sizes[i];
+
+  // Weights and biases
+  weights.clear();
+  biases.clear();
+  for(int l = 0; l < num_layers - 1; l++) {
+    // Weights
+    weights.push_back(Matrix(sizes[l + 1], sizes[l]));
+    for(int i = 0; i < sizes[l + 1]; i++) {
+      for(int j = 0; j < sizes[l]; j++) {
+        ss >> weights[l](i, j);
+      }
+    }
+    // Biases
+    biases.push_back(Vector(sizes[l + 1]));
+    for(int i = 0; i < sizes[l + 1]; i++) {
+      ss >>  biases[l](i);
+    }
+  }
+}
+
+template<class Matrix, class Vector>
+std::string Network<Matrix, Vector>::SaveCheckpoint() {
+  std::stringstream checkpoint;
+
+  // Number of layers
+  checkpoint << num_layers;
+
+  // Layer sizes
+  for(int size : sizes) checkpoint << " " << size;
+
+  for(int l = 0; l < num_layers - 1; l++) {
+    // Weights
+    for(int i = 0; i < sizes[l + 1]; i++) {
+      for(int j = 0; j < sizes[l]; j++) {
+        checkpoint << " " << weights[l](i, j);
+      }
+    }
+
+    // Biases
+    for(int i = 0; i < sizes[l + 1]; i++) {
+      checkpoint << " " << biases[l](i);
+    }
+  }
+
+  return checkpoint.str();
 }
 
 template<class Matrix, class Vector>

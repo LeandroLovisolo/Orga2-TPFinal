@@ -51,6 +51,7 @@ class NetworkTest : public ::testing::Test {
     INI::Parser p(fs);
     for(auto const& kv : p.top()("default").values) {
       t[kv.first] = stod(kv.second);
+      ts[kv.first] = kv.second;
     }
   }
 
@@ -68,6 +69,7 @@ class NetworkTest : public ::testing::Test {
 
   unique_ptr<MockNetwork<Matrix, Vector>> nn;
   unordered_map<string, float> t;
+  unordered_map<string, string> ts;
 };
 
 typedef ::testing::Types<NaiveMatrix, SimdMatrix, EigenMatrix> MatrixTypes;
@@ -76,6 +78,7 @@ TYPED_TEST_CASE(NetworkTest, MatrixTypes);
 
 #define nn (*this->nn)
 #define t this->t
+#define ts this->ts
 #define Matrix this->CreateMatrix
 #define Vector this->CreateVector
 #define TrainingData this->CreateTrainingData
@@ -299,4 +302,58 @@ TYPED_TEST(NetworkTest, SGD) {
 
   // Second layer biases
   EXPECT_NEAR(t["sgd.layer2.b0"], nn.biases[1](0), precision);
+}
+
+TYPED_TEST(NetworkTest, LoadCheckpoint) {
+  string checkpoint =
+    "3 3 2 2 "
+    "1 2 3 4 5 6 "
+    "-1 -2 "
+    "7 8 9 10 "
+    "-3 -4";
+  nn.LoadCheckpoint_(checkpoint);
+
+  EXPECT_EQ(nn.num_layers, 3);
+  EXPECT_EQ(nn.sizes, (vector<int> { 3, 2, 2 }));
+  EXPECT_EQ(nn.weights[0](0, 0), 1);
+  EXPECT_EQ(nn.weights[0](0, 1), 2);
+  EXPECT_EQ(nn.weights[0](0, 2), 3);
+  EXPECT_EQ(nn.weights[0](1, 0), 4);
+  EXPECT_EQ(nn.weights[0](1, 1), 5);
+  EXPECT_EQ(nn.weights[0](1, 2), 6);
+  EXPECT_EQ(nn.biases[0](0), -1);
+  EXPECT_EQ(nn.biases[0](1), -2);
+  EXPECT_EQ(nn.weights[1](0, 0), 7);
+  EXPECT_EQ(nn.weights[1](0, 1), 8);
+  EXPECT_EQ(nn.weights[1](1, 0), 9);
+  EXPECT_EQ(nn.weights[1](1, 1), 10);
+  EXPECT_EQ(nn.biases[1](0), -3);
+  EXPECT_EQ(nn.biases[1](1), -4);
+}
+
+TYPED_TEST(NetworkTest, SaveCheckpoint) {
+  vector<string> items {
+    // num_layers, sizes[0], sizes[1], sizes[2]
+    "3", "2", "3", "1",
+    // Layer 1 weights
+    ts["layer1.w00"], ts["layer1.w01"],
+    ts["layer1.w10"], ts["layer1.w11"],
+    ts["layer1.w20"], ts["layer1.w21"],
+    // Layer 1 biases
+    ts["layer1.b0"], ts["layer1.b1"], ts["layer1.b2"],
+    // Layer 2 weights
+    ts["layer2.w00"], ts["layer2.w01"], ts["layer2.w02"],
+    // Layer 2 biases
+    ts["layer2.b0"]
+  };
+
+  stringstream expected;
+  bool first = true;
+  for(const string& item : items) {
+    if(first) first = false;
+    else expected << " ";
+    expected << item;
+  }
+
+  EXPECT_EQ(expected.str(), nn.SaveCheckpoint());
 }

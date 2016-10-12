@@ -1,0 +1,2 @@
+total_training_time: 1655
+avg_epoch_time: 16.55

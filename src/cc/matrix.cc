@@ -2,10 +2,12 @@
 #include <cassert>
 #include <iostream>
 
+#ifndef EMSCRIPTEN
 #include "Eigen/Core"
+#include "simd_matrix.h"
+#endif  // EMSCRIPTEN
 
 #include "matrix.h"
-#include "simd_matrix.h"
 
 using namespace std;
 
@@ -146,6 +148,8 @@ NaiveMatrix NaiveMatrix::ApplyFn(
   }
   return res;
 }
+
+#ifndef EMSCRIPTEN
 
 //////////////////////////////////////////////////
 // SimdMatrix                                   //
@@ -433,3 +437,5 @@ EigenMatrix EigenMatrix::ApplyFn(
   res.m_ = res.m_.unaryExpr(fn);
   return res;
 }
+
+#endif  // EMSCRIPTEN

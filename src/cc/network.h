@@ -322,12 +322,14 @@ void Network<Matrix, Vector>::SGD(const TrainingData<Vector>& training_data,
   auto epoch_avg = (double) total_t / epochs;
   std::cout << "Total training time: " << total_t << std::endl
             << "Average epoch time: " << epoch_avg << std::endl;
+#ifndef EMSCRIPTEN
   if(!stats_file.empty()) {
     std::ofstream file(stats_file);
     file << "total_training_time: " << total_t << std::endl
          << "avg_epoch_time: " << epoch_avg << std::endl;
     file.close();
   }
+#endif  // EMSCRIPTEN
 }
 
 template<class Matrix, class Vector>

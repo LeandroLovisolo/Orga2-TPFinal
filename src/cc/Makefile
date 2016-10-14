@@ -6,7 +6,10 @@ TESTS_SRC       = matrix.cc matrix_test.cc simd_matrix_test.cc network_test.cc
 
 TEST_DEPS       = gtest-all.o gmock-all.o gtest_main.o
 
-BINARIES        = $(MAIN) $(TESTS)
+MAIN_JS         = ../ui/nn.js
+MAIN_JS_SRC     = nn_js.cc matrix.cc
+
+BINARIES        = $(MAIN) $(TESTS) $(MAIN_JS)
 
 ################################################################################
 
@@ -16,17 +19,20 @@ GTEST_DIR = ../../lib/googletest/googletest
 GMOCK_DIR = ../../lib/googletest/googlemock
 
 CXX        = clang++
+CXXOFLAG   = -O3
 CXXFLAGS  := $(CXXFLAGS) -std=c++14 \
              -I $(LIB_DIR) \
              -I $(EIGEN_DIR) \
              -isystem $(GTEST_DIR)/include \
              -isystem $(GMOCK_DIR)/include \
              -I $(GTEST_DIR) -I $(GMOCK_DIR) \
-             -O3
+             $(CXXOFLAG)
 NASM       = nasm
 NASM_FLAGS = -f elf64 -g -F dwarf
 LD         = $(CXX)
 LDFLAGS    = $(CXXFLAGS)
+EMXX       = /usr/lib/emscripten/em++
+EMXXFLAGS  = -std=c++14
 
 ################################################################################
 
@@ -46,6 +52,9 @@ $(MAIN): $(MAIN_SRC:.cc=.o) simd_matrix.o
 
 $(TESTS): $(TESTS_SRC:.cc=.o) simd_matrix.o $(TEST_DEPS)
 	$(LD) $(LDFLAGS) -pthread -o $@ $^
+
+$(MAIN_JS): $(MAIN_JS_SRC)
+	$(EMXX) $(EMXXFLAGS) -o $@ $^ --preload-file checkpoint
 
 %.o: %.cc
 	$(CXX) $(CXXFLAGS) -M -MF $(patsubst %.o, %.d, $@) $<

@@ -6,8 +6,10 @@
 #include <random>
 #include <vector>
 
+#ifndef EMSCRIPTEN
 #include "Eigen/Dense"
 #include "gtest/gtest_prod.h"
+#endif  // EMSCRIPTEN
 
 //////////////////////////////////////////////////
 // BaseMatrix                                   //
@@ -191,6 +193,8 @@ class NaiveMatrix : public BaseMatrix<NaiveMatrix> {
   std::vector<float> m_;
 };
 
+#ifndef EMSCRIPTEN
+
 //////////////////////////////////////////////////
 // SimdMatrix                                   //
 //////////////////////////////////////////////////
@@ -302,5 +306,7 @@ class EigenMatrix : public BaseMatrix<EigenMatrix> {
  private:
   Eigen::MatrixXf m_;
 };
+
+#endif  // EMSCRIPTEN
 
 #endif  // __MATRIX_H__

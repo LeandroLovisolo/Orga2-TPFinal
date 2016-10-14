@@ -20,7 +20,6 @@
           DistChart.initialize();
           Canvas.initialize();
           CanvasUI.initialize();
-          console.log("Runtime initialized.");
         }
       };
 
@@ -69,84 +68,98 @@
       var Canvas = {
         initialize: function() {
           Canvas.prevX = 0;
-          Canvas.currX = 0;
           Canvas.prevY = 0;
-          Canvas.currY = 0;
           Canvas.paths = []; // recording paths
           Canvas.paintFlag = false;
           Canvas.color = "black";
           Canvas.lineWidth = 20;
-          Canvas.cleared = true;
 
-          Canvas.canvas = document.getElementById('can');
+          Canvas.canvas = document.getElementById('drawing-canvas');
           Canvas.ctx = Canvas.canvas.getContext("2d");
 
-          Canvas.canvas.addEventListener("mousemove",
-                                         Canvas.mouseMove, false);
-          Canvas.canvas.addEventListener("mousedown",
-                                         Canvas.mouseDown, false);
-          Canvas.canvas.addEventListener("mouseup",
-                                         Canvas.mouseUp, false);
-          Canvas.canvas.addEventListener("mouseout",
-                                         Canvas.mouseOut, false);
+          // Mouse events
+          $(Canvas.canvas).on("mousedown", Canvas.mouseDown);
+          $(Canvas.canvas).on("mousemove", Canvas.mouseMove);
+          $(Canvas.canvas).on("mouseup mouseout", Canvas.pencilUp);
+
+          // Touch events
+          $(Canvas.canvas).on("touchstart", Canvas.touchStart);
+          $(Canvas.canvas).on("touchmove", Canvas.touchMove);
+          $(Canvas.canvas).on("touchend touchcancel", Canvas.pencilUp);
         },
 
         clear: function() {
-          Canvas.cleared = true;
           Canvas.ctx.clearRect(0, 0, Canvas.canvas.width, Canvas.canvas.height);
           Canvas.paths = [];
         },
 
-        mouseMove: function(e) {
-          Canvas.currX = e.pageX - $(Canvas.canvas).offset().left;
-          Canvas.currY = e.pageY - $(Canvas.canvas).offset().top;
+        mouseDown: function(e) {
+          e.preventDefault();
+          var x = e.pageX - $(Canvas.canvas).offset().left;
+          var y = e.pageY - $(Canvas.canvas).offset().top;
+          Canvas.pencilDown(x, y);
+        },
 
+        mouseMove: function(e) {
+          e.preventDefault();
+          var x = e.pageX - $(Canvas.canvas).offset().left;
+          var y = e.pageY - $(Canvas.canvas).offset().top;
+          Canvas.pencilMove(x, y);
+        },
+
+        touchStart: function(e) {
+          e.preventDefault();
+          var x = e.touches[0].pageX - $(Canvas.canvas).offset().left;
+          var y = e.touches[0].pageY - $(Canvas.canvas).offset().top;
+          Canvas.pencilDown(x, y);
+        },
+
+        touchMove: function(e) {
+          e.preventDefault();
+          var x = e.touches[0].pageX - $(Canvas.canvas).offset().left;
+          var y = e.touches[0].pageY - $(Canvas.canvas).offset().top;
+          Canvas.pencilMove(x, y);
+        },
+
+        pencilDown: function(x, y) {
+          Canvas.paintFlag = true;
+
+          // Draw a circle
+          Canvas.ctx.beginPath();
+          Canvas.ctx.lineWidth = 1;
+          Canvas.ctx.arc(x, y, Canvas.lineWidth / 2,
+                         0, 2 * Math.PI);
+          Canvas.ctx.stroke();
+          Canvas.ctx.closePath();
+          Canvas.ctx.fill();
+
+          // Save mouse coordinates
+          Canvas.prevX = x;
+          Canvas.prevY = y;
+        },
+
+        pencilMove: function(x, y) {
           if (Canvas.paintFlag) {
             // draw a line to previous point
-            Canvas.prevX = Canvas.currX;
-            Canvas.prevY = Canvas.currY;
-            currPath = Canvas.paths[Canvas.paths.length-1];
-            currPath[0].push(Canvas.currX);
-            currPath[1].push(Canvas.currY);
-            Canvas.paths[Canvas.paths.length-1] = currPath;
+            var path = {
+              x1: Canvas.prevX,
+              y1: Canvas.prevY,
+              x2: x,
+              y2: y
+            };
+            Canvas.paths.push(path);
+            Canvas.prevX = x;
+            Canvas.prevY = y;
             Canvas.draw(Canvas.ctx, Canvas.color, Canvas.lineWidth,
-                        Canvas.prevX, Canvas.prevY,
-                        Canvas.currX, Canvas.currY);
-          }
+                        path.x1, path.y1, path.x2, path.y2);
 
-          if(CanvasUI.liveUpdateEnabled && !Canvas.cleared) {
+            // Detect digit after changing pixels
             CanvasUI.detect();
           }
         },
 
-        mouseDown: function(e) {
-          Canvas.currX = e.pageX - $(Canvas.canvas).offset().left;
-          Canvas.currY = e.pageY - $(Canvas.canvas).offset().top;
-
-          //draw a circle
-          Canvas.ctx.beginPath();
-          Canvas.ctx.lineWidth = 1;
-          Canvas.ctx.arc(Canvas.currX, Canvas.currY, Canvas.lineWidth / 2,
-                         0, 2 * Math.PI);
-          Canvas.ctx.stroke();
-          Canvas.ctx.closePath();
-
-          Canvas.ctx.fill();
-
-          Canvas.paths.push([[Canvas.currX], [Canvas.currY]]);
-          Canvas.paintFlag = true;
-
-          Canvas.cleared = false;
-        },
-
-        mouseUp: function(e) {
+        pencilUp: function(x, y) {
           Canvas.paintFlag = false;
-          // console.log(Canvas.paths);
-        },
-
-        mouseOut: function(e) {
-          Canvas.paintFlag = false;
-          // console.log(Canvas.paths);
         },
 
         // draws a line from (x1, y1) to (x2, y2) with nice rounded caps
@@ -200,14 +213,12 @@
 
           // Regenerate digit from recorded paths
           for (var p = 0; p < Canvas.paths.length; p++) {
-            for (var i = 0; i < Canvas.paths[p][0].length - 1; i++) {
-              var x1 = Canvas.paths[p][0][i];
-              var y1 = Canvas.paths[p][1][i];
-              var x2 = Canvas.paths[p][0][i+1];
-              var y2 = Canvas.paths[p][1][i+1];
-              Canvas.draw(copyCtx, color, Canvas.lineWidth / scaling,
-                          x1, y1, x2, y2);
-            }
+            var x1 = Canvas.paths[p].x1;
+            var y1 = Canvas.paths[p].y1;
+            var x2 = Canvas.paths[p].x2;
+            var y2 = Canvas.paths[p].y2;
+            Canvas.draw(copyCtx, color, Canvas.lineWidth / scaling,
+                        x1, y1, x2, y2);
           }
 
           // Compute pixel values (to be used as input to the neural network)
@@ -238,11 +249,7 @@
       var CanvasUI = {
         initialize: function() {
           CanvasUI.clear();
-          CanvasUI.disableLiveUpdate();
-
-          $("#btn-detect").click(CanvasUI.detect);
           $("#btn-clear").click(CanvasUI.clear);
-          $("#checkbox-live-update").change(CanvasUI.toggleLiveUpdate);
         },
 
         detect: function() {
@@ -271,30 +278,13 @@
 
         clear: function() {
           Canvas.clear();
+          CanvasUI.clearInputImage();
           DistChart.update([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
           $("#digit-detected-box").hide();
         },
 
-        toggleLiveUpdate: function() {
-          if(this.checked) {
-            CanvasUI.enableLiveUpdate();
-          } else {
-            CanvasUI.disableLiveUpdate();
-          }
-        },
-
-        enableLiveUpdate: function() {
-          CanvasUI.liveUpdateEnabled = true;
-          $("#btn-detect").hide();
-        },
-
-        disableLiveUpdate: function() {
-          CanvasUI.liveUpdateEnabled = false;
-          $("#btn-detect").show();
-        },
-
         updateInputImage: function(pixels) {
-          var inputCtx = $("#inputCanvas")[0].getContext("2d");
+          var inputCtx = $("#input-canvas")[0].getContext("2d");
           inputCtx.clearRect(0, 0,
                              inputCtx.canvas.width,
                              inputCtx.canvas.height);
@@ -314,6 +304,11 @@
             }
           }
           inputCtx.putImageData(block, 0, 0);
+        },
+
+        clearInputImage: function() {
+          var inputCtx = $("#input-canvas")[0].getContext("2d").fillRect(
+              0, 0, 280, 280);
         }
       };
 
@@ -466,19 +461,10 @@
       <div class="row">
         <div class="col-md-6">
           <div>
-            <canvas id="can" width="280" height="280"
-                    style="border: 1px solid black"></canvas>
+            <canvas id="drawing-canvas" width="280" height="280"></canvas>
           </div>
           <p>
-            <button id="btn-detect">Detect</button>
             <button id="btn-clear">Clear</button>
-          </p>
-          <p>
-            <input type="checkbox" id="checkbox-live-update">
-            <label for="checkbox-live-update">
-              Live-update probabilities
-              <span style="color: red">(warning: slow!)</span>
-            </label>
           </p>
 
           <br/>
@@ -486,8 +472,7 @@
           <p>Input image:</p>
 
           <div>
-            <canvas id="inputCanvas" width="280" height="280"
-                    style="border: 1px solid black"></canvas>
+            <canvas id="input-canvas" width="280" height="280"></canvas>
           </div>
         </div>
 

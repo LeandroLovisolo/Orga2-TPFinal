@@ -3,10 +3,112 @@
   <head>
     <link rel="stylesheet/less" type="text/css" href="styles.less" />
 
-    <script type="text/javascript" src="jquery-3.1.1.js"></script>
-    <script type="text/javascript" src="less.min.js"></script>
-    <script type="text/javascript" src="Chart-2.3.0.js"></script>
+    <script type="text/javascript" src="lib/jquery-3.1.1.js"></script>
+    <script type="text/javascript" src="lib/less.min.js"></script>
+    <script type="text/javascript" src="lib/Chart-2.3.0.js"></script>
     <script type="text/javascript">
+
+      ///////////////////////////////////////////////////
+      // INITIALIZATION                                //
+      ///////////////////////////////////////////////////
+
+      // Function Module.onRuntimeInitialized is called after emscripten code
+      // has finished loading.
+      var Module = {
+        onRuntimeInitialized: function() {
+          NeuralNetwork.initialize();
+          DistChart.initialize();
+          CanvasUI.initialize();
+          console.log("Runtime initialized.");
+        }
+      };
+
+      ///////////////////////////////////////////////////
+      // NEURAL NETWORK                                //
+      ///////////////////////////////////////////////////
+
+      var NeuralNetwork = {
+        initialize: function() {
+          var nn_init = Module.cwrap('nn_init', 'void', []);
+          NeuralNetwork.nn_eval = Module.cwrap('nn_eval',
+                                               'void',
+                                               ['number', 'number']);
+
+          NeuralNetwork.input = Module._malloc(
+              28 * 28 * Float32Array.BYTES_PER_ELEMENT);
+          NeuralNetwork.output = Module._malloc(
+              30 * Float32Array.BYTES_PER_ELEMENT);
+
+          nn_init();
+        },
+
+        evalDigit: function(pixels) {
+          for(var i = 0; i < 28 * 28; i++) {
+            Module.setValue(NeuralNetwork.input + 4 * i, pixels[i], "float");
+          }
+          NeuralNetwork.nn_eval(NeuralNetwork.input, NeuralNetwork.output);
+          res = []
+          for(var i = 0; i < 10; i++) {
+            res.push(Module.getValue(NeuralNetwork.output + 4 * i, "float"));
+          }
+          return res;
+        }
+      };
+
+      ///////////////////////////////////////////////////
+      // DRAWING CANVAS AND UI                         //
+      ///////////////////////////////////////////////////
+
+      var CanvasUI = {
+        initialize: function() {
+          initializeCanvas();
+          CanvasUI.clear();
+          CanvasUI.disableLiveUpdate();
+
+          $("#btn-detect").click(CanvasUI.detect);
+          $("#btn-clear").click(CanvasUI.clear);
+          $("#checkbox-live-update").change(CanvasUI.toggleLiveUpdate);
+        },
+
+        detect: function() {
+          var dist = NeuralNetwork.evalDigit(getDigitPixels());
+          DistChart.update(dist);
+          var detected = 0;
+          for(var i = 0; i < 10; i++) {
+            if(dist[i] > dist[detected]) detected = i;
+          }
+          $("#digit-detected-box").show();
+          $("#digit-detected").text(detected);
+        },
+
+        clear: function() {
+          CanvasUI.canvasCleared = true;
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          paths = [];
+          DistChart.update([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+          $("#digit-detected-box").hide();
+        },
+
+        toggleLiveUpdate: function() {
+          if(this.checked) {
+            CanvasUI.enableLiveUpdate();
+          } else {
+            CanvasUI.disableLiveUpdate();
+          }
+        },
+
+        enableLiveUpdate: function() {
+          CanvasUI.liveUpdateEnabled = true;
+          $("#btn-detect").hide();
+        },
+
+        disableLiveUpdate: function() {
+          CanvasUI.liveUpdateEnabled = false;
+          $("#btn-detect").show();
+        }
+      };
+
+
       var canvas, ctx;
       var prevX = 0;
       var currX = 0;
@@ -18,7 +120,7 @@
       var lineWidth = 20;
       var clearBeforeDraw = false; // controls whether canvas will be cleared on next mousedown event. Set to true after digit recognition
 
-      function initCanvas() {
+      function initializeCanvas() {
           canvas = document.getElementById('can');
           ctx = canvas.getContext("2d");
 
@@ -50,12 +152,6 @@
           ctx.closePath();
       }
 
-      function erase() {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          paths = [];
-          detectDigit();
-      }
-
       function findxy(res, e) {
           currX = e.pageX - $(canvas).offset().left;
           currY = e.pageY - $(canvas).offset().top;
@@ -80,7 +176,10 @@
 
               paths.push([[currX], [currY]]);
               paintFlag = true;
+
+              CanvasUI.canvasCleared = false;
           }
+
           if (res == 'up' || res == "out") {
               paintFlag = false;
               //console.log(paths);
@@ -97,32 +196,16 @@
                   paths[paths.length-1] = currPath;
                   draw(ctx, color, lineWidth, prevX, prevY, currX, currY);
               }
-              detectDigit();
+
+              if(CanvasUI.liveUpdateEnabled && !CanvasUI.canvasCleared) {
+                CanvasUI.detect();
+              }
           }
       }
 
-
-
-
-
-
-
-
-
-
-
-      var nn_init, nn_eval, input, output;
-      var chart;
-
-      function detectDigit() {
-        var dist = evalDigit();
-        updateChart(dist);
-        var detected = 0;
-        for(var i = 0; i < 10; i++) {
-          if(dist[i] > dist[detected]) detected = i;
-        }
-        $("#digit-detected").text(detected);
-      }
+      ///////////////////////////////////////////////////
+      // DIGIT DETECTION                               //
+      ///////////////////////////////////////////////////
 
       function getDigitPixels() {
         // convert RGBA image to a grayscale array, then compute bounding
@@ -198,108 +281,9 @@
         return pixels;
       }
 
-      function evalDigit() {
-        var digit = getDigitPixels();
-        for(var i = 0; i < 28 * 28; i++) {
-          Module.setValue(input + 4 * i, digit[i], "float");
-        }
-        nn_eval(input, output);
-        res = []
-        for(var i = 0; i < 10; i++) {
-          res.push(Module.getValue(output + 4 * i, "float"));
-        }
-        return res;
-      }
-
-      function initializeChart(probabilities) {
-        Chart.defaults.global.animation.duration = 0;
-        var ctx = document.getElementById("chart").getContext("2d");
-        chart = new Chart(ctx, {
-            type: "bar",
-            data: {
-              labels: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"],
-              datasets: [{
-                data: probabilities,
-                backgroundColor: [
-                    'rgba(0, 0, 0, 0.2)',
-                    'rgba(0, 0, 0, 0.2)',
-                    'rgba(0, 0, 0, 0.2)',
-                    'rgba(0, 0, 0, 0.2)',
-                    'rgba(0, 0, 0, 0.2)',
-                    'rgba(0, 0, 0, 0.2)',
-                    'rgba(0, 0, 0, 0.2)',
-                    'rgba(0, 0, 0, 0.2)',
-                    'rgba(0, 0, 0, 0.2)',
-                    'rgba(0, 0, 0, 0.2)',
-                ],
-                borderWidth: 1
-              }]
-            },
-            options: {
-              legend: {
-                display: false
-              },
-              scales: {
-                yAxes: [{
-                  ticks: {
-                    beginAtZero: true
-                  }
-                }]
-              }
-            }
-        });
-      }
-
-      function updateChart(probabilities) {
-        var detected = 0;
-        for(var i = 0; i < 10; i++) {
-          if(probabilities[i] > probabilities[detected]) detected = i;
-        }
-
-        chart.data.datasets[0].data = probabilities;
-        chart.data.datasets[0].backgroundColor = [];
-        for(var i = 0; i < 10; i++) {
-          if(i == detected) color = "rgba(255, 0, 0, 0.2)";
-          else color = "rgba(0, 0, 0, 0.2)";
-          chart.data.datasets[0].backgroundColor.push(color);
-        }
-        chart.update();
-      }
-
-      var Module = {
-        onRuntimeInitialized: function() {
-          nn_init = Module.cwrap('nn_init', 'void', []);
-          nn_eval = Module.cwrap('nn_eval', 'void', ['number', 'number']);
-
-          input = Module._malloc(28 * 28 * Float32Array.BYTES_PER_ELEMENT);
-          output = Module._malloc(30 * Float32Array.BYTES_PER_ELEMENT);
-
-          nn_init();
-
-          initCanvas();
-          initializeChart(evalDigit());
-
-          console.log("Runtime initialized.");
-        }
-      };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+      ///////////////////////////////////////////////////
+      // IMAGE PROCESSING                              //
+      ///////////////////////////////////////////////////
 
       // computes center of mass of digit, for centering
       // note 1 stands for black (0 white) so we have to invert.
@@ -372,6 +356,68 @@
         }
         return grayscaleImg;
       }
+
+      ///////////////////////////////////////////////////
+      // PROBABILITY DISTRIBUTION CHART                //
+      ///////////////////////////////////////////////////
+
+      var DistChart = {
+        initialize: function() {
+          Chart.defaults.global.animation.duration = 0;
+          var ctx = document.getElementById("chart").getContext("2d");
+          DistChart.chart = new Chart(ctx, {
+              type: "bar",
+              data: {
+                labels: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"],
+                datasets: [{
+                  data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                  backgroundColor: [
+                      'rgba(0, 0, 0, 0.2)',
+                      'rgba(0, 0, 0, 0.2)',
+                      'rgba(0, 0, 0, 0.2)',
+                      'rgba(0, 0, 0, 0.2)',
+                      'rgba(0, 0, 0, 0.2)',
+                      'rgba(0, 0, 0, 0.2)',
+                      'rgba(0, 0, 0, 0.2)',
+                      'rgba(0, 0, 0, 0.2)',
+                      'rgba(0, 0, 0, 0.2)',
+                      'rgba(0, 0, 0, 0.2)',
+                  ],
+                  borderWidth: 1
+                }]
+              },
+              options: {
+                legend: {
+                  display: false
+                },
+                scales: {
+                  yAxes: [{
+                    ticks: {
+                      beginAtZero: true
+                    }
+                  }]
+                }
+              }
+          });
+        },
+
+        update: function(probabilities) {
+          var detected = 0;
+          for(var i = 0; i < 10; i++) {
+            if(probabilities[i] > probabilities[detected]) detected = i;
+          }
+
+          DistChart.chart.data.datasets[0].data = probabilities;
+          DistChart.chart.data.datasets[0].backgroundColor = [];
+          for(var i = 0; i < 10; i++) {
+            if(i == detected) color = "rgba(255, 0, 0, 0.2)";
+            else color = "rgba(0, 0, 0, 0.2)";
+            DistChart.chart.data.datasets[0].backgroundColor.push(color);
+          }
+          DistChart.chart.update();
+        }
+      };
+
     </script>
 
     <!-- Emscripten output has to be loaded last for the
@@ -389,7 +435,15 @@
                     style="border: 1px solid black"></canvas>
           </div>
           <p>
-            <button id="clear" onclick="erase()">Clear</button>
+            <button id="btn-detect">Detect</button>
+            <button id="btn-clear">Clear</button>
+          </p>
+          <p>
+            <input type="checkbox" id="checkbox-live-update">
+            <label for="checkbox-live-update">
+              Live-update probabilities
+              <span style="color: red">(warning: slow!)</span>
+            </label>
           </p>
 
           <br/>
@@ -404,7 +458,9 @@
 
         <div class="col-md-6">
           <canvas id="chart"></canvas>
-          <p>Digit detected: <strong id="digit-detected">?</strong></p>
+          <p id="digit-detected-box">
+            Digit detected: <strong id="digit-detected">?</strong>
+          </p>
         </div>
       </div>
     </div>

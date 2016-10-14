@@ -8,6 +8,7 @@
     <script type="text/javascript" src="Chart-2.3.0.js"></script>
     <script type="text/javascript" src="nn.js"></script>
     <script type="text/javascript">
+      var cppCodeLoaded = true;
       var canvas, ctx;
       var prevX = 0;
       var currX = 0;
@@ -115,6 +116,8 @@
       var chart;
 
       function detectDigit() {
+        if(!cppCodeLoaded) return;
+
         var dist = evalDigit();
         updateChart(dist);
         var detected = 0;
@@ -289,6 +292,10 @@
       }
 
       $(function() {
+        Module['_main'] = function() {
+          cppCodeLoaded = true;
+        }
+
         nn_init = Module.cwrap('nn_init', 'void', []);
         nn_eval = Module.cwrap('nn_eval', 'void', ['number', 'number']);
 

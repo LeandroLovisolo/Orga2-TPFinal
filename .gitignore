@@ -6,10 +6,22 @@ data/train-labels-idx1-ubyte
 
 # Binaries
 src/cc/nn
+src/cc/nnO0
+src/cc/nnO1
+src/cc/nnO2
+src/cc/nnO3
 src/cc/tests
 *.o
 *.d
 *.pyc
+
+# LaTeX
+*.aux
+*.log
+*.out
+*.idx
+*.pdf
+*.toc
 
 # Misc
 *.ycm*

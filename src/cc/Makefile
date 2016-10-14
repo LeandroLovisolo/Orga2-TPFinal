@@ -7,6 +7,7 @@ TESTS_SRC       = matrix.cc matrix_test.cc simd_matrix_test.cc network_test.cc
 TEST_DEPS       = gtest-all.o gmock-all.o gtest_main.o
 
 MAIN_JS         = ../ui/nn.js
+MAIN_JS_DATA    = ../ui/nn.data
 MAIN_JS_SRC     = nn_js.cc matrix.cc
 
 BINARIES        = $(MAIN) $(TESTS) $(MAIN_JS)
@@ -89,6 +90,6 @@ $(TEST_LABELS): ${TEST_LABELS}.gz
 	gunzip --keep $^
 
 clean:
-	rm -f $(BINARIES) *.o *.d \
+	rm -f $(BINARIES) *.o *.d $(MAIN_JS_DATA) \
         $(TRAIN_IMAGES) $(TRAIN_LABELS) \
         $(TEST_IMAGES) $(TEST_LABELS)

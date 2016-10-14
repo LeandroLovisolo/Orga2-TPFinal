@@ -6,9 +6,7 @@
     <script type="text/javascript" src="jquery-3.1.1.js"></script>
     <script type="text/javascript" src="less.min.js"></script>
     <script type="text/javascript" src="Chart-2.3.0.js"></script>
-    <script type="text/javascript" src="nn.js"></script>
     <script type="text/javascript">
-      var cppCodeLoaded = true;
       var canvas, ctx;
       var prevX = 0;
       var currX = 0;
@@ -55,6 +53,7 @@
       function erase() {
           ctx.clearRect(0, 0, canvas.width, canvas.height);
           paths = [];
+          detectDigit();
       }
 
       function findxy(res, e) {
@@ -116,8 +115,6 @@
       var chart;
 
       function detectDigit() {
-        if(!cppCodeLoaded) return;
-
         var dist = evalDigit();
         updateChart(dist);
         var detected = 0;
@@ -181,17 +178,6 @@
           }
         }
 
-        var realCtx = document.getElementById("realdigit").getContext("2d");
-        realCtx.fillStyle = "rgba(0,0,0,1)";
-        realCtx.fillRect(0, 0, 28, 28);
-        for(var i = 0; i < 28; i++) {
-          for(var j = 0; j < 28; j++) {
-            var p = parseInt(pixels[28 * j + i]);
-            realCtx.fillStyle = "rgba(" + p + "," + p + "," + p + ",1)";
-            realCtx.fillRect(i, j, 1, 1);
-          }
-        }
-
         var inputCtx = $("#inputCanvas")[0].getContext("2d");
         inputCtx.clearRect(0, 0, inputCtx.canvas.width, inputCtx.canvas.height);
         inputCtx.drawImage(copyCtx.canvas, 0, 0);
@@ -212,19 +198,8 @@
         return pixels;
       }
 
-      function transposeDigitPixels(pixels) {
-        var transposed = []
-        for(var i = 0; i < 28; i++) {
-          for(var j = 0; j < 28; j++) {
-            transposed.push(pixels[28 * j + i])
-          }
-        }
-        return transposed;
-      }
-
       function evalDigit() {
-        var digit = transposeDigitPixels(getDigitPixels());
-        // var digit = getDigitPixels();
+        var digit = getDigitPixels();
         for(var i = 0; i < 28 * 28; i++) {
           Module.setValue(input + 4 * i, digit[i], "float");
         }
@@ -291,24 +266,22 @@
         chart.update();
       }
 
-      $(function() {
-        Module['_main'] = function() {
-          cppCodeLoaded = true;
+      var Module = {
+        onRuntimeInitialized: function() {
+          nn_init = Module.cwrap('nn_init', 'void', []);
+          nn_eval = Module.cwrap('nn_eval', 'void', ['number', 'number']);
+
+          input = Module._malloc(28 * 28 * Float32Array.BYTES_PER_ELEMENT);
+          output = Module._malloc(30 * Float32Array.BYTES_PER_ELEMENT);
+
+          nn_init();
+
+          initCanvas();
+          initializeChart(evalDigit());
+
+          console.log("Runtime initialized.");
         }
-
-        nn_init = Module.cwrap('nn_init', 'void', []);
-        nn_eval = Module.cwrap('nn_eval', 'void', ['number', 'number']);
-
-        input = Module._malloc(28 * 28 * Float32Array.BYTES_PER_ELEMENT);
-        output = Module._malloc(30 * Float32Array.BYTES_PER_ELEMENT);
-
-        nn_init();
-
-        initCanvas();
-        initializeChart(evalDigit());
-      });
-
-
+      };
 
 
 
@@ -400,6 +373,10 @@
         return grayscaleImg;
       }
     </script>
+
+    <!-- Emscripten output has to be loaded last for the
+         Module.onRuntimeInitialized definition above to work. -->
+    <script type="text/javascript" src="nn.js"></script>
   </head>
 
   <body>
@@ -422,12 +399,6 @@
           <div>
             <canvas id="inputCanvas" width="280" height="280"
                     style="border: 1px solid black"></canvas>
-          </div>
-
-          <br/>
-
-          <div>
-            <canvas id="realdigit" width="28" height="28"></canvas>
           </div>
         </div>
 

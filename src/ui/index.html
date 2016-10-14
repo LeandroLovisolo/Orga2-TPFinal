@@ -18,6 +18,7 @@
         onRuntimeInitialized: function() {
           NeuralNetwork.initialize();
           DistChart.initialize();
+          Canvas.initialize();
           CanvasUI.initialize();
           console.log("Runtime initialized.");
         }
@@ -43,8 +44,14 @@
         },
 
         evalDigit: function(pixels) {
-          for(var i = 0; i < 28 * 28; i++) {
-            Module.setValue(NeuralNetwork.input + 4 * i, pixels[i], "float");
+          for(var i = 0; i < 28; i++) {
+            for(var j = 0; j < 28; j++) {
+              var offset = 28 * i + j;
+              var transposedOffset = 28 * j + i
+              Module.setValue(NeuralNetwork.input + 4 * transposedOffset,
+                              pixels[offset],
+                              "float");
+            }
           }
           NeuralNetwork.nn_eval(NeuralNetwork.input, NeuralNetwork.output);
           res = []
@@ -56,12 +63,180 @@
       };
 
       ///////////////////////////////////////////////////
-      // DRAWING CANVAS AND UI                         //
+      // DRAWING CANVAS                                //
+      ///////////////////////////////////////////////////
+
+      var Canvas = {
+        initialize: function() {
+          Canvas.prevX = 0;
+          Canvas.currX = 0;
+          Canvas.prevY = 0;
+          Canvas.currY = 0;
+          Canvas.paths = []; // recording paths
+          Canvas.paintFlag = false;
+          Canvas.color = "black";
+          Canvas.lineWidth = 20;
+          Canvas.cleared = true;
+
+          Canvas.canvas = document.getElementById('can');
+          Canvas.ctx = Canvas.canvas.getContext("2d");
+
+          Canvas.canvas.addEventListener("mousemove",
+                                         Canvas.mouseMove, false);
+          Canvas.canvas.addEventListener("mousedown",
+                                         Canvas.mouseDown, false);
+          Canvas.canvas.addEventListener("mouseup",
+                                         Canvas.mouseUp, false);
+          Canvas.canvas.addEventListener("mouseout",
+                                         Canvas.mouseOut, false);
+        },
+
+        clear: function() {
+          Canvas.cleared = true;
+          Canvas.ctx.clearRect(0, 0, Canvas.canvas.width, Canvas.canvas.height);
+          Canvas.paths = [];
+        },
+
+        mouseMove: function(e) {
+          Canvas.currX = e.pageX - $(Canvas.canvas).offset().left;
+          Canvas.currY = e.pageY - $(Canvas.canvas).offset().top;
+
+          if (Canvas.paintFlag) {
+            // draw a line to previous point
+            Canvas.prevX = Canvas.currX;
+            Canvas.prevY = Canvas.currY;
+            currPath = Canvas.paths[Canvas.paths.length-1];
+            currPath[0].push(Canvas.currX);
+            currPath[1].push(Canvas.currY);
+            Canvas.paths[Canvas.paths.length-1] = currPath;
+            Canvas.draw(Canvas.ctx, Canvas.color, Canvas.lineWidth,
+                        Canvas.prevX, Canvas.prevY,
+                        Canvas.currX, Canvas.currY);
+          }
+
+          if(CanvasUI.liveUpdateEnabled && !Canvas.cleared) {
+            CanvasUI.detect();
+          }
+        },
+
+        mouseDown: function(e) {
+          Canvas.currX = e.pageX - $(Canvas.canvas).offset().left;
+          Canvas.currY = e.pageY - $(Canvas.canvas).offset().top;
+
+          //draw a circle
+          Canvas.ctx.beginPath();
+          Canvas.ctx.lineWidth = 1;
+          Canvas.ctx.arc(Canvas.currX, Canvas.currY, Canvas.lineWidth / 2,
+                         0, 2 * Math.PI);
+          Canvas.ctx.stroke();
+          Canvas.ctx.closePath();
+
+          Canvas.ctx.fill();
+
+          Canvas.paths.push([[Canvas.currX], [Canvas.currY]]);
+          Canvas.paintFlag = true;
+
+          Canvas.cleared = false;
+        },
+
+        mouseUp: function(e) {
+          Canvas.paintFlag = false;
+          // console.log(Canvas.paths);
+        },
+
+        mouseOut: function(e) {
+          Canvas.paintFlag = false;
+          // console.log(Canvas.paths);
+        },
+
+        // draws a line from (x1, y1) to (x2, y2) with nice rounded caps
+        draw: function(ctx, color, lineWidth, x1, y1, x2, y2) {
+          ctx.beginPath();
+          ctx.strokeStyle = "#000000";
+          // ctx.strokeStyle = color;
+          ctx.lineWidth = lineWidth;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(x2, y2);
+          ctx.stroke();
+          ctx.closePath();
+        },
+
+        getPixels: function() {
+          // Convert to grayscale
+          var imgData = Canvas.ctx.getImageData(0, 0, 280, 280);
+          grayscaleImg = ImageProcessing.imageDataToGrayscale(imgData);
+
+          // Compute bounding rectangle
+          var boundingRectangle = ImageProcessing.getBoundingRectangle(
+            grayscaleImg, 0.01);
+
+          // Compute center of mass
+          var trans = ImageProcessing.centerImage(grayscaleImg);
+
+          // copy image to hidden canvas, translate to center-of-mass, then
+          // scale to fit into a 200x200 box (see MNIST calibration notes on
+          // Yann LeCun's website)
+
+          // Create ghost canvas element for the preprocessed digit image
+          var canvasCopy = document.createElement("canvas");
+          canvasCopy.width = imgData.width;
+          canvasCopy.height = imgData.height;
+          var copyCtx = canvasCopy.getContext("2d");
+
+          // Scale digit
+          var brW = boundingRectangle.maxX+1-boundingRectangle.minX;
+          var brH = boundingRectangle.maxY+1-boundingRectangle.minY;
+          var scaling = 190 / (brW>brH?brW:brH);
+          copyCtx.translate(Canvas.ctx.canvas.width / 2,
+                            Canvas.ctx.canvas.height / 2);
+          copyCtx.scale(scaling, scaling);
+          copyCtx.translate(-Canvas.ctx.canvas.width / 2,
+                            -Canvas.ctx.canvas.height / 2);
+
+          // Translate to center of mass
+          copyCtx.translate(trans.transX, trans.transY);
+
+          // Regenerate digit from recorded paths
+          for (var p = 0; p < Canvas.paths.length; p++) {
+            for (var i = 0; i < Canvas.paths[p][0].length - 1; i++) {
+              var x1 = Canvas.paths[p][0][i];
+              var y1 = Canvas.paths[p][1][i];
+              var x2 = Canvas.paths[p][0][i+1];
+              var y2 = Canvas.paths[p][1][i+1];
+              Canvas.draw(copyCtx, color, Canvas.lineWidth / scaling,
+                          x1, y1, x2, y2);
+            }
+          }
+
+          // Compute pixel values (to be used as input to the neural network)
+          pixels = [];
+          var data = copyCtx.getImageData(0, 0, 280, 280).data;
+          for(var y = 0; y < 28; y++) {
+            for(var x = 0; x < 28; x++) {
+              var sum = 0;
+              for(var i = 0; i < 10; i++) {
+                for(var j = 0; j < 10; j++) {
+                  var offset = 4 * ((y * 10 + i) * 280 + x * 10 + j);
+                  sum += data[offset + 3];
+                }
+              }
+              var avg = sum / 100;
+              pixels.push(avg);
+            }
+          }
+
+          return pixels;
+        }
+      };
+
+      ///////////////////////////////////////////////////
+      // CANVAS UI                                     //
       ///////////////////////////////////////////////////
 
       var CanvasUI = {
         initialize: function() {
-          initializeCanvas();
           CanvasUI.clear();
           CanvasUI.disableLiveUpdate();
 
@@ -71,20 +246,31 @@
         },
 
         detect: function() {
-          var dist = NeuralNetwork.evalDigit(getDigitPixels());
+          // Get pixels
+          var pixels = Canvas.getPixels();
+
+          // Update image representing neural network input
+          CanvasUI.updateInputImage(pixels);
+
+          // Compute probability distribution over the digits
+          var dist = NeuralNetwork.evalDigit(pixels);
+
+          // Update probability distribution chart
           DistChart.update(dist);
+
+          // Find digit with maximum probability
           var detected = 0;
           for(var i = 0; i < 10; i++) {
             if(dist[i] > dist[detected]) detected = i;
           }
+
+          // Show detected digit
           $("#digit-detected-box").show();
           $("#digit-detected").text(detected);
         },
 
         clear: function() {
-          CanvasUI.canvasCleared = true;
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          paths = [];
+          Canvas.clear();
           DistChart.update([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
           $("#digit-detected-box").hide();
         },
@@ -105,257 +291,106 @@
         disableLiveUpdate: function() {
           CanvasUI.liveUpdateEnabled = false;
           $("#btn-detect").show();
+        },
+
+        updateInputImage: function(pixels) {
+          var inputCtx = $("#inputCanvas")[0].getContext("2d");
+          inputCtx.clearRect(0, 0,
+                             inputCtx.canvas.width,
+                             inputCtx.canvas.height);
+          var block = inputCtx.getImageData(0, 0, 280, 280);
+          for(var y = 0; y < 28; y++) {
+            for(var x = 0; x < 28; x++) {
+              var newVal = pixels[y * 28 + x];
+              for(var i = 0; i < 10; i++) {
+                for(var j = 0; j < 10; j++) {
+                  var offset = 4 * ((y * 10 + i) * 280 + x * 10 + j);
+                  block.data[offset] = newVal;
+                  block.data[offset + 1] = newVal;
+                  block.data[offset + 2] = newVal;
+                  block.data[offset + 3] = 255;
+                }
+              }
+            }
+          }
+          inputCtx.putImageData(block, 0, 0);
         }
       };
-
-
-      var canvas, ctx;
-      var prevX = 0;
-      var currX = 0;
-      var prevY = 0;
-      var currY = 0;
-      var paths = []; // recording paths
-      var paintFlag = false;
-      var color = "black";
-      var lineWidth = 20;
-      var clearBeforeDraw = false; // controls whether canvas will be cleared on next mousedown event. Set to true after digit recognition
-
-      function initializeCanvas() {
-          canvas = document.getElementById('can');
-          ctx = canvas.getContext("2d");
-
-          canvas.addEventListener("mousemove", function (e) {
-              findxy('move', e)
-          }, false);
-          canvas.addEventListener("mousedown", function (e) {
-              findxy('down', e)
-          }, false);
-          canvas.addEventListener("mouseup", function (e) {
-              findxy('up', e)
-          }, false);
-          canvas.addEventListener("mouseout", function (e) {
-              findxy('out', e)
-          }, false);
-      }
-
-      // draws a line from (x1, y1) to (x2, y2) with nice rounded caps
-      function draw(ctx, color, lineWidth, x1, y1, x2, y2) {
-          ctx.beginPath();
-          ctx.strokeStyle = "#000000";
-          // ctx.strokeStyle = color;
-          ctx.lineWidth = lineWidth;
-          ctx.lineCap = 'round';
-          ctx.lineJoin = 'round';
-          ctx.moveTo(x1, y1);
-          ctx.lineTo(x2, y2);
-          ctx.stroke();
-          ctx.closePath();
-      }
-
-      function findxy(res, e) {
-          currX = e.pageX - $(canvas).offset().left;
-          currY = e.pageY - $(canvas).offset().top;
-
-          if (res == 'down') {
-              if (clearBeforeDraw == true) {
-                ctx.clearRect(0,0,canvas.width,canvas.height);
-                document.getElementById('nnInput').innerHTML='';
-                document.getElementById('nnOut').innerHTML='';
-                paths = [];
-                clearBeforeDraw = false;
-              }
-
-              //draw a circle
-              ctx.beginPath();
-              ctx.lineWidth = 1;
-              ctx.arc(currX,currY,lineWidth/2,0,2*Math.PI);
-              ctx.stroke();
-              ctx.closePath();
-
-              ctx.fill();
-
-              paths.push([[currX], [currY]]);
-              paintFlag = true;
-
-              CanvasUI.canvasCleared = false;
-          }
-
-          if (res == 'up' || res == "out") {
-              paintFlag = false;
-              //console.log(paths);
-          }
-
-          if (res == 'move') {
-              if (paintFlag) {
-                  // draw a line to previous point
-                  prevX = currX;
-                  prevY = currY;
-                  currPath = paths[paths.length-1];
-                  currPath[0].push(currX);
-                  currPath[1].push(currY);
-                  paths[paths.length-1] = currPath;
-                  draw(ctx, color, lineWidth, prevX, prevY, currX, currY);
-              }
-
-              if(CanvasUI.liveUpdateEnabled && !CanvasUI.canvasCleared) {
-                CanvasUI.detect();
-              }
-          }
-      }
-
-      ///////////////////////////////////////////////////
-      // DIGIT DETECTION                               //
-      ///////////////////////////////////////////////////
-
-      function getDigitPixels() {
-        // convert RGBA image to a grayscale array, then compute bounding
-        // rectangle and center of mass
-        var imgData = ctx.getImageData(0, 0, 280, 280);
-        grayscaleImg = imageDataToGrayscale(imgData);
-        var boundingRectangle = getBoundingRectangle(grayscaleImg, 0.01);
-        var trans = centerImage(grayscaleImg); // [dX, dY] to center of mass
-        // copy image to hidden canvas, translate to center-of-mass, then
-        // scale to fit into a 200x200 box (see MNIST calibration notes on
-        // Yann LeCun's website)
-        var canvasCopy = document.createElement("canvas");
-        canvasCopy.width = imgData.width;
-        canvasCopy.height = imgData.height;
-        var copyCtx = canvasCopy.getContext("2d");
-        var brW = boundingRectangle.maxX+1-boundingRectangle.minX;
-        var brH = boundingRectangle.maxY+1-boundingRectangle.minY;
-        var scaling = 190 / (brW>brH?brW:brH);
-        // scale
-        copyCtx.translate(ctx.canvas.width/2, ctx.canvas.height/2);
-        copyCtx.scale(scaling, scaling);
-        copyCtx.translate(-ctx.canvas.width/2, -ctx.canvas.height/2);
-        // translate to center of mass
-        copyCtx.translate(trans.transX, trans.transY);
-        // default take image from original ctx.canvas
-        // copyCtx.drawImage(ctx.canvas, 0, 0);
-
-        for (var p = 0; p < paths.length; p++) {
-          for (var i = 0; i < paths[p][0].length - 1; i++) {
-            var x1 = paths[p][0][i];
-            var y1 = paths[p][1][i];
-            var x2 = paths[p][0][i+1];
-            var y2 = paths[p][1][i+1];
-            draw(copyCtx, color, lineWidth / scaling, x1, y1, x2, y2);
-          }
-        }
-
-
-
-
-
-
-
-        pixels = [];
-        for(var i = 0; i < 28; i++) {
-          for(var j = 0; j < 28; j++) {
-            var data = copyCtx.getImageData(i * 10, j * 10, 10, 10).data;
-            var sum = 0;
-            for(var k = 0; k < data.length / 4; k++) sum += data[4 * k + 3];
-            var avg = sum / (data.length / 4);
-            pixels.push(avg);
-            avgi = parseInt(avg)
-          }
-        }
-
-        var inputCtx = $("#inputCanvas")[0].getContext("2d");
-        inputCtx.clearRect(0, 0, inputCtx.canvas.width, inputCtx.canvas.height);
-        inputCtx.drawImage(copyCtx.canvas, 0, 0);
-        for (var y = 0; y < 28; y++) {
-          for (var x = 0; x < 28; x++) {
-            var block = inputCtx.getImageData(x * 10, y * 10, 10, 10);
-            var newVal = pixels[x*28+y];
-            for (var i = 0; i < 4 * 10 * 10; i+=4) {
-              block.data[i] = newVal;
-              block.data[i+1] = newVal;
-              block.data[i+2] = newVal;
-              block.data[i+3] = 255;
-            }
-            inputCtx.putImageData(block, x * 10, y * 10);
-          }
-        }
-
-        return pixels;
-      }
 
       ///////////////////////////////////////////////////
       // IMAGE PROCESSING                              //
       ///////////////////////////////////////////////////
 
-      // computes center of mass of digit, for centering
-      // note 1 stands for black (0 white) so we have to invert.
-      function centerImage(img) {
-        var meanX = 0;
-        var meanY = 0;
-        var rows = img.length;
-        var columns = img[0].length;
-        var sumPixels = 0;
-        for (var y = 0; y < rows; y++) {
-          for (var x = 0; x < columns; x++) {
-            var pixel = (1 - img[y][x]);
-            sumPixels += pixel;
-            meanY += y * pixel;
-            meanX += x * pixel;
-          }
-        }
-        meanX /= sumPixels;
-        meanY /= sumPixels;
-
-        var dY = Math.round(rows/2 - meanY);
-        var dX = Math.round(columns/2 - meanX);
-        return {transX: dX, transY: dY};
-      }
-
-      // given grayscale image, find bounding rectangle of digit defined
-      // by above-threshold surrounding
-      function getBoundingRectangle(img, threshold) {
-        var rows = img.length;
-        var columns = img[0].length;
-        var minX=columns;
-        var minY=rows;
-        var maxX=-1;
-        var maxY=-1;
-        for (var y = 0; y < rows; y++) {
-          for (var x = 0; x < columns; x++) {
-            if (img[y][x] < threshold) {
-              if (minX > x) minX = x;
-              if (maxX < x) maxX = x;
-              if (minY > y) minY = y;
-              if (maxY < y) maxY = y;
+      var ImageProcessing = {
+        // computes center of mass of digit, for centering
+        // note 1 stands for black (0 white) so we have to invert.
+        centerImage: function(img) {
+          var meanX = 0;
+          var meanY = 0;
+          var rows = img.length;
+          var columns = img[0].length;
+          var sumPixels = 0;
+          for (var y = 0; y < rows; y++) {
+            for (var x = 0; x < columns; x++) {
+              var pixel = (1 - img[y][x]);
+              sumPixels += pixel;
+              meanY += y * pixel;
+              meanX += x * pixel;
             }
           }
-        }
-        return { minY: minY, minX: minX, maxY: maxY, maxX: maxX};
-      }
+          meanX /= sumPixels;
+          meanY /= sumPixels;
 
-      // take canvas image and convert to grayscale. Mainly because my
-      // own functions operate easier on grayscale, but some stuff like
-      // resizing and translating is better done with the canvas functions
-      function imageDataToGrayscale(imgData) {
-        var grayscaleImg = [];
-        for (var y = 0; y < imgData.height; y++) {
-          grayscaleImg[y]=[];
-          for (var x = 0; x < imgData.width; x++) {
-            var offset = y * 4 * imgData.width + 4 * x;
-            var alpha = imgData.data[offset+3];
-            // weird: when painting with stroke, alpha == 0 means white;
-            // alpha > 0 is a grayscale value; in that case I simply take the R value
-            if (alpha == 0) {
-              imgData.data[offset] = 255;
-              imgData.data[offset+1] = 255;
-              imgData.data[offset+2] = 255;
+          var dY = Math.round(rows/2 - meanY);
+          var dX = Math.round(columns/2 - meanX);
+          return {transX: dX, transY: dY};
+        },
+
+        getBoundingRectangle: function(img, threshold) {
+          var rows = img.length;
+          var columns = img[0].length;
+          var minX=columns;
+          var minY=rows;
+          var maxX=-1;
+          var maxY=-1;
+          for (var y = 0; y < rows; y++) {
+            for (var x = 0; x < columns; x++) {
+              if (img[y][x] < threshold) {
+                if (minX > x) minX = x;
+                if (maxX < x) maxX = x;
+                if (minY > y) minY = y;
+                if (maxY < y) maxY = y;
+              }
             }
-            imgData.data[offset+3] = 255;
-            // simply take red channel value. Not correct, but works for
-            // black or white images.
-            grayscaleImg[y][x] = imgData.data[y*4*imgData.width + x*4 + 0] / 255;
           }
+          return { minY: minY, minX: minX, maxY: maxY, maxX: maxX};
+        },
+
+        imageDataToGrayscale: function(imgData) {
+          var grayscaleImg = [];
+          for (var y = 0; y < imgData.height; y++) {
+            grayscaleImg[y]=[];
+            for (var x = 0; x < imgData.width; x++) {
+              var offset = y * 4 * imgData.width + 4 * x;
+              var alpha = imgData.data[offset+3];
+              // weird: when painting with stroke, alpha == 0 means white;
+              // alpha > 0 is a grayscale value; in that case I simply take the
+              // R value
+              if (alpha == 0) {
+                imgData.data[offset] = 255;
+                imgData.data[offset+1] = 255;
+                imgData.data[offset+2] = 255;
+              }
+              imgData.data[offset+3] = 255;
+              // simply take red channel value. Not correct, but works for
+              // black or white images.
+              grayscaleImg[y][x] = imgData.data[y * 4 * imgData.width +
+                                                x * 4] / 255;
+            }
+          }
+          return grayscaleImg;
         }
-        return grayscaleImg;
-      }
+      };
 
       ///////////////////////////////////////////////////
       // PROBABILITY DISTRIBUTION CHART                //
@@ -366,38 +401,38 @@
           Chart.defaults.global.animation.duration = 0;
           var ctx = document.getElementById("chart").getContext("2d");
           DistChart.chart = new Chart(ctx, {
-              type: "bar",
-              data: {
-                labels: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"],
-                datasets: [{
-                  data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                  backgroundColor: [
-                      'rgba(0, 0, 0, 0.2)',
-                      'rgba(0, 0, 0, 0.2)',
-                      'rgba(0, 0, 0, 0.2)',
-                      'rgba(0, 0, 0, 0.2)',
-                      'rgba(0, 0, 0, 0.2)',
-                      'rgba(0, 0, 0, 0.2)',
-                      'rgba(0, 0, 0, 0.2)',
-                      'rgba(0, 0, 0, 0.2)',
-                      'rgba(0, 0, 0, 0.2)',
-                      'rgba(0, 0, 0, 0.2)',
-                  ],
-                  borderWidth: 1
-                }]
+            type: "bar",
+            data: {
+              labels: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"],
+              datasets: [{
+                data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                backgroundColor: [
+                  'rgba(0, 0, 0, 0.2)',
+                  'rgba(0, 0, 0, 0.2)',
+                  'rgba(0, 0, 0, 0.2)',
+                  'rgba(0, 0, 0, 0.2)',
+                  'rgba(0, 0, 0, 0.2)',
+                  'rgba(0, 0, 0, 0.2)',
+                  'rgba(0, 0, 0, 0.2)',
+                  'rgba(0, 0, 0, 0.2)',
+                  'rgba(0, 0, 0, 0.2)',
+                  'rgba(0, 0, 0, 0.2)',
+                ],
+                borderWidth: 1
+              }]
+            },
+            options: {
+              legend: {
+                display: false
               },
-              options: {
-                legend: {
-                  display: false
-                },
-                scales: {
-                  yAxes: [{
-                    ticks: {
-                      beginAtZero: true
-                    }
-                  }]
-                }
+              scales: {
+                yAxes: [{
+                  ticks: {
+                    beginAtZero: true
+                  }
+                }]
               }
+            }
           });
         },
 

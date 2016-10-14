@@ -7,6 +7,8 @@
 #include "network.h"
 #include "optparse.h"
 
+constexpr int kHiddenLayerSize = 30;
+
 constexpr char kTrainImagesPath[] = "../../data/train-images-idx3-ubyte";
 constexpr char kTrainLabelsPath[] = "../../data/train-labels-idx1-ubyte";
 constexpr char kTestImagesPath[] = "../../data/t10k-images-idx3-ubyte";
@@ -28,6 +30,28 @@ TrainingData<Vector> to_training_data(const LabelledMistData& mnist_data) {
   return training_data;
 }
 
+void TestCheckpointAccuracy(const string& checkpoint_path) {
+  MnistLoader loader(kTrainImagesPath, kTrainLabelsPath,
+                     kTestImagesPath, kTestLabelsPath);
+  ifstream f(checkpoint_path);
+  string checkpoint((istreambuf_iterator<char>(f)),
+                     istreambuf_iterator<char>());
+  Network<NaiveMatrix> network(checkpoint);
+  TrainingData<NaiveMatrix> test_data =
+      to_training_data<NaiveMatrix, NaiveMatrix>(loader.test_data());
+  int total = network.Evaluate_(test_data);
+  float accuracy = (float) total / test_data.size() * 100;
+  cout << accuracy << "\% accuracy on test data." << endl
+       << "(" << total << " out of " << test_data.size()
+       << " digits correctly classified.)" << endl;
+}
+
+void ExportTrainingImage(int index) {
+  MnistLoader loader(kTrainImagesPath, kTrainLabelsPath,
+                     kTestImagesPath, kTestLabelsPath);
+  cout << loader.ImageToPpm(loader.train_data(), index);
+}
+
 template<class Matrix, class Vector=Matrix>
 void TrainNetwork(const string& matrix_impl_name, int epochs,
                   const string& stats_file,
@@ -42,7 +66,7 @@ void TrainNetwork(const string& matrix_impl_name, int epochs,
 
   // Perform training
   cout << "Training with matrix implementation: " << matrix_impl_name << endl;
-  Network<Matrix> nn(vector<int> { 784, 30, 10 });
+  Network<Matrix> nn(vector<int> { 784, kHiddenLayerSize, 10 });
   nn.SGD(training_data, test_data, stats_file, epochs, 50, 0.1);
   cout << "Training finished." << endl;
 
@@ -71,17 +95,37 @@ int main(int argc, char **argv) {
   parser.add_option("-s", "--stats").dest("stats_file")
     .help("File where to write out stats.")
     .set_default("")
-    .metavar("STATS_FILE");
+    .metavar("STATS_PATH");
   parser.add_option("-o", "--output").dest("checkpoint_file")
     .help("File where to save training checkpoint")
     .set_default("")
-    .metavar("OUTPUT_FILE");
+    .metavar("OUTPUT_PATH");
+  parser.add_option("-t", "--test-checkpoint").dest("test_checkpoint_file")
+    .help("Load checkpoint from file, print out accuracy and exit.")
+    .set_default("")
+    .metavar("CHECKPOINT_PATH");
+  parser.add_option("--export-training-image").dest("export_training_image")
+    .help("Print out training image in PPM format and exit immediately.")
+    .set_default("")
+    .metavar("INDEX");
 
   const optparse::Values options = parser.parse_args(argc, argv);
   string impl = options["matrix"];
   int epochs = stoi(options["epochs"]);
   string stats_file = options["stats_file"];
   string checkpoint_file = options["checkpoint_file"];
+  string test_checkpoint_file = options["test_checkpoint_file"];
+  string export_training_image = options["export_training_image"];
+
+  if(!test_checkpoint_file.empty()) {
+    TestCheckpointAccuracy(test_checkpoint_file);
+    return 0;
+  }
+
+  if(!export_training_image.empty()) {
+    ExportTrainingImage(stoi(export_training_image));
+    return 0;
+  }
 
   if(impl == "naive") {
     TrainNetwork<NaiveMatrix>(impl, epochs, stats_file, checkpoint_file);

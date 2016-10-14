@@ -17,7 +17,8 @@ class MnistLoader {
               const std::string& test_labels_path);
   inline LabelledMistData& train_data() { return train_data_; }
   inline LabelledMistData& test_data() { return test_data_; }
-  std::string ImageToString(const LabelledMistData& data, int index);
+  std::string ImageToAsciiString(const LabelledMistData& data, int index);
+  std::string ImageToPpm(const LabelledMistData& data, int index);
 
  private:
   LabelledMistData ReadDataset_(const std::string& images_path,
@@ -25,6 +26,8 @@ class MnistLoader {
   void ReadHeader_(std::ifstream& file, int& magic_number, int& num_items);
   std::vector<std::vector<uchar>> LoadImagesFile_(const std::string& path);
   std::vector<uchar> LoadLabelsFile_(const std::string& path);
+  std::vector<uchar> TransposeImage_(const std::vector<uchar>& image,
+                                     int rows, int columns);
 
   LabelledMistData train_data_;
   LabelledMistData test_data_;

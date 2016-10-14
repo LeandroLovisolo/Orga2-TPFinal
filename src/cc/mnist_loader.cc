@@ -15,7 +15,8 @@ MnistLoader::MnistLoader(const string& train_images_path,
   test_data_ = ReadDataset_(test_images_path, test_labels_path);
 }
 
-string MnistLoader::ImageToString(const LabelledMistData& data, int index) {
+string MnistLoader::ImageToAsciiString(const LabelledMistData& data,
+                                       int index) {
   stringstream ss;
   for(int x = 0; x < 28; x++) {
     for(int y = 27; y >= 0; y--) {
@@ -26,6 +27,22 @@ string MnistLoader::ImageToString(const LabelledMistData& data, int index) {
     ss << endl;
   }
   ss << "LABEL: " << to_string(data[index].second) << endl;
+  return ss.str();
+}
+
+string MnistLoader::ImageToPpm(const LabelledMistData& data, int index) {
+  stringstream ss;
+  ss << "P3" << endl
+     << "# Label: " << to_string(data[index].second) << endl
+     << "28 28" << endl
+     << "255" << endl;
+  for(int x = 0; x < 28; x++) {
+    for(int y = 0; y < 28; y++) {
+      int offset = 28 * y + x;
+      unsigned char c = data[index].first[offset];
+      ss << to_string(c) << " " << to_string(c) << " " << to_string(c) << endl;
+    }
+  }
   return ss.str();
 }
 
@@ -80,6 +97,8 @@ vector<vector<uchar>> MnistLoader::LoadImagesFile_(const string& path) {
 
   for(int i = 0; i < num_images; i++) {
     file.read((char *) images[i].data(), image_size);
+    vector<uchar> transpose = TransposeImage_(images[i], rows, columns);
+    images[i] = transpose;
   }
 
   return images;
@@ -98,4 +117,15 @@ vector<uchar> MnistLoader::LoadLabelsFile_(const string& path) {
   vector<uchar> labels(num_labels);
   file.read((char *) labels.data(), num_labels);
   return labels;
+}
+
+vector<uchar> MnistLoader::TransposeImage_(const vector<uchar>& image,
+                                           int rows, int columns) {
+  vector<uchar> transpose(image.size());
+  for(int i = 0; i < rows; i++) {
+    for(int j = 0; j < columns; j++) {
+      transpose[j * rows + i] = image[i * columns + j];
+    }
+  }
+  return transpose;
 }

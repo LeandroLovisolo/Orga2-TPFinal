@@ -272,15 +272,17 @@
           }
 
           // Show detected digit
-          $("#digit-detected-box").show();
           $("#digit-detected").text(detected);
+
+          // Display hidden elements
+          $(".hidden-when-canvas-is-blank").show();
         },
 
         clear: function() {
           Canvas.clear();
           CanvasUI.clearInputImage();
           DistChart.update([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
-          $("#digit-detected-box").hide();
+          $(".hidden-when-canvas-is-blank").hide();
         },
 
         updateInputImage: function(pixels) {
@@ -459,29 +461,34 @@
     <div class="container">
       <h1>Handwritten digit recognizer</h1>
       <div class="row">
-        <div class="col-md-6">
-          <div>
-            <canvas id="drawing-canvas" width="280" height="280"></canvas>
-          </div>
+        <div class="col-lg-3">
+          <h3>Draw a digit here:</h3>
+          <canvas id="drawing-canvas" width="280" height="280"></canvas>
           <p>
-            <button id="btn-clear">Clear</button>
+            <button id="btn-clear" class="btn">Clear</button>
           </p>
+        </div>
+        <div class="col-lg-3">
+          <div class="hidden-when-canvas-is-blank">
+            <h3>Digit detected:</h3>
 
-          <br/>
-
-          <p>Input image:</p>
-
-          <div>
+            <p id="digit-detected"></p>
+          </div>
+        </div>
+        <div class="col-lg-3">
+          <div class="hidden-when-canvas-is-blank">
+            <h3>Neural network input:</h3>
             <canvas id="input-canvas" width="280" height="280"></canvas>
           </div>
         </div>
-
-        <div class="col-md-6">
-          <canvas id="chart"></canvas>
-          <p id="digit-detected-box">
-            Digit detected: <strong id="digit-detected">?</strong>
-          </p>
+        <div class="col-lg-3">
+          <div class="hidden-when-canvas-is-blank">
+            <h3>Scores:</h3>
+            <canvas id="chart" width="280" height="280"></canvas>
+          </div>
         </div>
+      </div>
+      <div class="row">
       </div>
     </div>
   </body>

@@ -57,7 +57,7 @@ section .text
   ; Clear high 32 bits of rdi
   mov edi, edi
 
-  ; Store in r12 the maximum offset we want use with SIMD the instruction
+  ; Store in r12 the maximum offset we want use with the SIMD instruction
   mov rax, rdi              ; rax = size
   sub rax, 4                ; rax = size - 4
   mov rbx, 4                ; rbx = 4

@@ -1732,7 +1732,24 @@ El resto de las operaciones se delegan al método correspondiente en la clase
 
 \section{Experimentos}
 
-Pendiente.
+El objetivo de los experimentos es comparar la performance de las distintas
+implementaciones de la clase \cc{BaseMatrix} en la tarea de entrenar la red
+neuronal de reconocimiento de dígitos manuscritos durante 100 épocas de
+entrenamiento.
+
+Cada una de las tres implementaciones (\cc{NaiveMatrix}, \cc{SimdMatrix},
+\cc{eigenMatrix}) se compila con niveles de optimización O0, O1, O2 y O3,
+produciendo 4 grupos de experimentos donde se comparan las tres
+implementaciones entre sí compiladas con el mismo nivel de optimización.
+
+Para cada grupo de experimentos se mide:
+
+\begin{itemize}
+  \item Tiempo total de entrenamiento.
+  \item Tiempo promedio por época de entrenamiento.
+\end{itemize}
+
+En la siguiente sección se presentan los resultados de dichos experimentos.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1742,7 +1759,21 @@ Pendiente.
 
 \section{Resultados}
 
-Pendiente.
+A continuación se presentan los resultados obtenidos.
+
+
+\subsection{Tiempo total de entrenamiento}
+
+\grafico{total-training-time}
+        {Tiempo total de entrenamiento}
+        {img:total-training-time}
+
+
+\subsection{Tiempo promedio por época de entrenamiento}
+
+\grafico{avg-epoch-time}
+        {Tiempo promedio por época de entrenamiento}
+        {img:avg-epoch-time}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1752,7 +1783,19 @@ Pendiente.
 
 \section{Discusión}
 
-Pendiente.
+Analizando las figuras \ref{img:total-training-time} y \ref{img:avg-epoch-time}
+se puede observar que la implementación \cc{NaiveMatrix} es notablemente más
+lenta que \cc{SimdMatrix} cuando se deshabilitan las optimizaciones del
+compilador (nivel de optimización -O0). La diferencia relativa se vuelve cada
+vez más pequeña en la medida que se incrementa el nivel de optimización, pero
+en todos los casos \cc{SimdMatrix} demora menos tiempo que \cc{NaiveMatrix}.
+
+En cuanto a \cc{EigenMatrix}, se observa un pésimo desempeño sin optimización
+del compilador y con el primer nivel de optimización (-O0 y -O1,
+respectivamente). En ambos casos demora más que \cc{NaiveMatrix}. Esta
+situación se revierte con los dos niveles de optimización más elevados (-O2 y
+-O3), en los que \cc{EigenMatrix} es la implementación que mejor se desempeña
+de las tres.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1762,7 +1805,17 @@ Pendiente.
 
 \section{Conclusiones}
 
-Pendiente.
+A partir de lo anterior se concluye que, para la aplicación estudiada en este
+trabajo, las rutinas escritas en assembler aprovechando las instrucciones SIMD
+del procesador mejoran notablemente el desempeño del programa comparado a una
+implementación naive en C++. Sin embargo, estos beneficios se vuelven casi
+despreciables cuando se compila el mismo programa C++ con niveles de
+optimización más altos.
+
+Además, se puede concluir que para este tipo de aplicaciones no tiene demasiado
+sentido el implementar algoritmos de álgebra lineal desde cero, cuando ya
+existen excelentes librerías de código abierto que ofrecen implementaciones
+bien implementadas y testeadas.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1772,8 +1825,23 @@ Pendiente.
 
 \section{Apéndice: GUI}
 
-Pendiente.
+Con el motivo de depurar la red neuronal implementada en este trabajo, se
+desarrolló una interfaz gráfica que permite dibujar dígitos con el mouse y
+visualizar las probabilidades asignadas por la red neuronal para cada dígito
+del 0 al 9. La misma se ilustra en la figura \ref{img:ui} y se puede utilizar
+desde un navegador web entrando a
+\texttt{\href{http://leandro.me/Orga2-TPFinal}{http://leandro.me/Orga2-TPFinal}}.
 
+\img{ui.png}{Interfaz gráfica (captura de pantalla)}{img:ui}
+
+Para el desarrollo de esta visualización se utilizó
+\link{http://emscripten.org}{Emscripten}, un compilador basado en
+\link{http://llvm.org/}{LLVM} que transcompila código C++ en JavaScript,
+permitiendo ejecutar un programa C++ en cualquier navegador web moderno.
+
+La implementación transcompilada a JavaScript es \cc{NaiveMatrix}, ya que
+Emscripten sólo soporta código C++, y esto imposibilita usar la implementación
+en assembler.
 
 
 \end{document}

@@ -1,0 +1,1779 @@
+\documentclass[a4paper, 10pt, twoside]{article}
+
+\usepackage[top=1in, bottom=1in, left=1in, right=1in]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish, es-ucroman, es-noquoting]{babel}
+\usepackage{setspace}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amsthm}
+\usepackage{verbatim}
+\usepackage{fancyvrb}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{enumitem}  % Provee macro \setlist
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{hyperref}
+\usepackage{xspace}
+\usepackage{makeidx}
+\usepackage{underscore}  % Permite hyphenar palabras con subraya (ej.: foo_bar)
+\usepackage{bm}  % Provee macro \bm
+\usepackage[toc, page]{appendix}
+
+\makeindex
+
+%%%%%%%%%% Constantes - Inicio %%%%%%%%%%
+\newcommand{\titulo}{Trabajo Práctico Final}
+\newcommand{\materia}{Organización del Computador II}
+\newcommand{\integrantes}{Leandro Lovisolo}
+\newcommand{\cuatrimestre}{Noviembre 2016}
+%%%%%%%%%% Constantes - Fin %%%%%%%%%%
+
+
+%%%%%%%%%% Configuración de Fancyhdr - Inicio %%%%%%%%%%
+\pagestyle{fancy}
+\thispagestyle{fancy}
+\lhead{\titulo\ · \materia}
+\rhead{\integrantes}
+\renewcommand{\footrulewidth}{0.4pt}
+\cfoot{\thepage /\pageref{LastPage}}
+
+\fancypagestyle{caratula} {
+   \fancyhf{}
+   \cfoot{\thepage /\pageref{LastPage}}
+   \renewcommand{\headrulewidth}{0pt}
+   \renewcommand{\footrulewidth}{0pt}
+}
+%%%%%%%%%% Configuración de Fancyhdr - Fin %%%%%%%%%%
+
+
+%%%%%%%%%% Insertar imagen - Inicio %%%%%%%%%%
+\newcommand{\img}[3]{
+  \begin{figure}[H]
+    \begin{center}
+      \includegraphics[width=10cm]{#1}
+    \end{center}
+    \caption{#2}
+    \label{#3}
+  \end{figure}
+}
+%%%%%%%%%% Insertar imagen - Fin %%%%%%%%%%
+
+
+%%%%%%%%%% Insertar gráfico - Inicio %%%%%%%%%%
+\newcommand{\grafico}[3]{
+  \begin{figure}[H]
+    \includegraphics[type=pdf,ext=.pdf,read=.pdf]{#1}
+    \caption{#2}
+    \label{#3}
+  \end{figure}
+}
+%%%%%%%%%% Insertar gráfico - Fin %%%%%%%%%%
+
+
+%%%%%%%%%% Código - Inicio %%%%%%%%%%
+\newcommand{\cc}[1]{\texttt{#1}}
+%%%%%%%%%% Código - Fin %%%%%%%%%%
+
+
+%%%%%%%%%% Links - Inicio %%%%%%%%%%
+\newcommand{\link}[2]{
+  \href{#1}{#2}\footnote{#1}
+}
+%%%%%%%%%% Links - Fin %%%%%%%%%%
+
+
+%%%%%%%%%% Miscelánea - Inicio %%%%%%%%%%
+% Evita que el documento se estire verticalmente para ocupar el espacio vacío
+% en cada página.
+\raggedbottom
+
+% Separación entre párrafos.
+\setlength{\parskip}{0.5em}
+
+% Separación entre elementos de listas.
+\setlist{itemsep=0.5em}
+
+% Asigna la traducción de la palabra 'Appendices'.
+\renewcommand{\appendixtocname}{Apéndices}
+\renewcommand{\appendixpagename}{Apéndices}
+%%%%%%%%%% Miscelánea - Fin %%%%%%%%%%
+
+
+\begin{document}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Carátula                                                                   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\thispagestyle{caratula}
+
+\begin{center}
+
+\includegraphics[height=2cm]{DC.png} 
+\hfill
+\includegraphics[height=2cm]{UBA.jpg} 
+
+\vspace{2cm}
+
+Departamento de Computación,\\
+Facultad de Ciencias Exactas y Naturales,\\
+Universidad de Buenos Aires
+
+\vspace{4cm}
+
+\begin{Huge}
+\titulo
+\end{Huge}
+
+\vspace{0.5cm}
+
+\begin{Large}
+\materia
+\end{Large}
+
+\vspace{1cm}
+
+\cuatrimestre
+
+\vspace{4cm}
+
+\begin{tabular}{|c|c|c|}
+\hline
+Apellido y Nombre & LU & E-mail\\
+\hline
+Lovisolo, Leandro      & 645/11 & leandro@leandro.me\\
+\hline
+\end{tabular}
+
+\end{center}
+
+\newpage
+
+\printindex
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Introducción                                                               %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\section{Introducción}
+
+El objetivo de este trabajo es comparar los tiempos de entrenamiento de
+distintas implementaciones de una red neuronal para reconocimiento de dígitos
+manuscritos. Las implementaciones en cuestión son las siguientes:
+
+\begin{itemize}
+  \item \textbf{Implementación naive}: todas las operaciones de álgebra lineal
+    se implementan de manera naive utilizando bucles anidados que operan sobre
+    matrices y vectores de a una coordenda por vez.
+
+  \item \textbf{Implementación SIMD}: las operaciones de álgebra lineal se
+    paralelizan a nivel instrucción utilizando operaciones SIMD siempre que sea
+    posible.
+
+  \item \textbf{Implementacón Eigen}: se utiliza la librería
+    \link{http://eigen.tuxfamily.org/}{Eigen} para realizar las operaciones de
+    álgebra lineal. Eigen es una librería C++ que implementa algoritmos de
+    álgebra lineal de manera optimizada. Se usa frecuentemente en la industria
+    para aplicaciones de alto rendimiento.
+\end{itemize}
+
+Todas las implementaciones fueron escritas en C++, salvo partes de la
+implementación SIMD que fueron escritas en assembler x86-64. Los compiladores
+usados fueron \link{http://clang.llvm.org/}{clang} y
+\link{http://www.nasm.us/}{NASM}, respectivamente.
+
+Cada implementación es compilada con niveles de optimización O0, O1, O2 y O3.
+Esto arroja 12 versiones distintas de la red neuronal (3 implementaciones por 4
+niveles de optimización posibles.)
+
+Cada una de las 12 versiones resultantes se las entrena utilizando el dataset
+de dígitos manuscritos \link{http://yann.lecun.com/exdb/mnist/}{MNIST} durante
+exactamente la misma cantidad de épocas de entrenamiento, y se les mide el
+tiempo que demoran en completar dicha tarea.
+
+Finalmente se compara el tiempo de entrenamiento de cada versión, se discuten
+los resultados obtenidos y se obtienen conclusiones.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Preliminares                                                               %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\section{Preliminares}
+
+La red neuronal implementada en este trabajo se basa en la red neuronal para
+reconocimiento de dígitos implementada en los capítulos
+\link{http://neuralnetworksanddeeplearning.com/chap1.html}{1} y
+\link{http://neuralnetworksanddeeplearning.com/chap2.html}{2} del libro
+\link{http://neuralnetworksanddeeplearning.com/}{Neural Networks and Deep
+Learning}, de \link{http://michaelnielsen.org/}{Michael Nielsen}.
+
+En lo siguiente se introducen el problema del reconocimiento de dígitos y los
+conceptos básicos de redes neuronales necesarios para este trabajo.
+
+
+\subsection{Reconocimiento de dígitos}
+
+Se desea implementar un sistema de reconocimiento de dígitos manuscritos, como
+los que se ven en la siguiente imagen.
+
+\img{digits.png}{Dígitos manuscritos}{img:digits}
+
+Más concretamente, dada una imagen $i$ de 28 x 28 pixeles en escala de grises
+(codificados como enteros de 0 a 255), se desea estimar, para cada dígito $j
+\in {0, 1, \ldots, 9}$, la probabilidad $p_j(i)$ que la imagen $i$ corresponda
+a cada dígito $j$.
+
+
+\subsection{Datos de entrenamiento}
+
+Para resolver este problema se entrenará una red neuronal utilizando la base de
+datos de dígitos manuscritos \link{yann.lecun.com/exdb/mnist/}{MNIST}, que se
+compone de 60,000 ejemplos de entrenamiento (imágenes en escala de grises de 28
+x 28 con una etiqueta que indica el dígito de 0 a 9 al que correspoden) y un
+conjunto de test de 10,000 imágenes etiquetadas, que no se usan para entrenar
+el modelo sino para medir su precisión.
+
+\img{mnist-digits.png}{Dígitos de la base de datos MNIST}{img:mnist-digits}
+
+
+\subsection{Introducción a redes neuronales}
+
+A continuación se hace una brevísima introducción a los conceptos básicos
+necesarios para entender el modelo desarrollado en este trabajo y su
+implementación.
+
+
+\subsubsection{Función sigmoide}
+
+La función sigmoide $\sigma: \mathbb{R} \rightarrow \mathbb{R}$ es una función
+matemática con forma de "S" (llamada curva sigmoide) definida por la siguiente
+fórmula:
+
+$$\sigma(z) = \frac{1}{1 + e^(-z)}$$
+
+Esta función permite introducir una no-linealidad en un sistema de ecuaciones,
+comprimiendo $z$ en el rango $(0, 1)$ como se puede ver en la siguiente figura.
+
+\img{sigmoid-curve.png}{Curva sigmoide}{img:sigmoid-curve}
+
+La función sigmoide se utiliza para computar la salida de cada neurona en una
+red neuronal, como se verá a continuación.
+
+
+\subsubsection{Neuronas sigmoide}
+
+Una neurona sigmoide toma varias entradas $x_1, x_2, \ldots, x_n \in
+\mathbb{R}$ y produce una única salida.
+
+\img{neuron.png}{Neurona sigmoide}{img:neuron}
+
+La salida $\mathit{output}$ de la neurona sigmoide se obtiene primero
+computando la activación $z$ (que se definirá a continuación), a la que se le
+aplica la función sigmoide $\sigma$. Es decir, $\mathit{output} = \sigma(z)$.
+
+La activación $z$ se obiene computando la suma ponderada de las entradas $x_1,
+\ldots, x_n$ contra un vector de pesos $w_1, w_2, \ldots, w_n \in \mathbb{R}$,
+a la que luego se le suma un término de sesgo $b \in \mathbb{R}$:
+
+$$z = w_1 x_1 + w_2 x_2 + \ldots + w_n x_n + b$$
+
+Esta combinación lineal entre $w_1, \ldots, w_n$ y $x_1, \ldots, x_n$ se puede
+escribir como el producto entre vectores $\bm{w} = (w_1, \ldots, w_n)$ y
+$\bm{x} = (x_1, \ldots, x_n)$ de la siguiente manera:
+
+$$z = \bm{w} \cdot \bm{x} + b$$
+
+La salida de la neurona sigmoide queda entonces definida por la siguiente
+fórmula:
+
+$$\mathit{output} = \sigma(z) = \frac{1}{1 + exp(\sum w_i x_i + b)}$$
+
+o equivalentemente, en notación vectorial:
+
+$$\mathit{output} = \sigma(\bm{w} \cdot \bm{x} + b)$$
+
+La neurona sigmoide se puede utilizar para aproximar ciertas funciones
+$\mathbb{R}^n \rightarrow (0, 1)$ eligiendo $\bm{w}$ y $b$ adecuados, como se
+verá a continuación.
+
+
+\subsubsection{Aproximando funciones con la neurona sigmoide}
+
+Existen ciertas funciones $f : \mathbb{R}^n \rightarrow (0, 1)$ que se pueden
+aproximar con una neurona sigmoide eligiendo adecuadamente los pesos $\bm{w} =
+(w_1, \ldots w_n)$ y el término de sesgo $b$.
+
+Por ejemplo, para $f(x_1, \ldots, x_n) = \sigma(x_1 + 1)$, basta con elegir
+$\bm{w} = (1, 0, \ldots, 0)$ y $b = 1$, ya que la salida de la neurona sigmoide
+queda determinada de la siguiente manera:
+
+\begin{align*}
+  \mathit{output} & = \sigma(w_1 x_1 + w_2 x_2 + \ldots + w_n x_n + b) \\
+                  & = \sigma(1 \cdot x_1 + 0 \cdot x_2 + \ldots + 0 \cdot x_n
+                             + 1) \\
+                  & = \sigma(x_1 + 1) \\
+                  & = f
+\end{align*}
+
+Sin embargo, esto no es siempre posible para cualquier elección de $f$, ya que
+la capacidad de aproximación de una neurona sigmoide es limitada.
+
+A continuación veremos cómo combinar varias neuronas sigmoides para obtener una
+red neuronal con mayor poder de aproximación.
+
+
+\subsubsection{Redes neuronales}
+
+Una manera sencilla de combinar varias neuronas sigmoides es conectando la
+entrada $\bm{x} = (x_1, \ldots, x_n)$ a varias neuronas sigmoides en paralelo,
+y luego usar la salida de cada una de ellas como entradas de una neurona
+sigmoide adicional que las combina y produce una única salida.
+
+\img{neural-network.png}{Red neuronal}{img:neural-network}
+
+En la red de la figura \ref{img:neural-network} se tienen 3 entradas $\bm{x} =
+(x_1, x_2, x_3)$ y 4 neuronas internas con vectores de pesos $\bm{w^i} =
+(w^i_1, w^i_2, w^i_3)$ y términos de sesgo $b^i$, con $i = 1, \ldots, 4$. La
+salida de cada neurona interna tiene la siguiente fórmula:
+
+$$\mathit{output}^i = \sigma(\bm{w^i} \cdot \bm{x} + b^i)$$
+
+Notamos $\bm{o}$ al vector de salidas de la capa de neuronas internas:
+
+$$
+\bm{o} =
+\begin{bmatrix}
+  \mathit{outputs^1} \\
+  \mathit{outputs^2} \\
+  \mathit{outputs^3} \\
+  \mathit{outputs^4} \\
+\end{bmatrix}
+$$
+
+La salida de la neurona final, con vector de pesos $\bm{w}$ y sesgo $b$, queda
+entonces definida por la siguiente fórmula:
+
+$$\mathit{output} = \sigma(\bm{w} \cdot \bm{o} + b)$$
+
+A continuación se verá una manera de simplificar la notación y las cuentas
+necesarias para computar la salida de una red neuronal.
+
+
+\subsubsection{Redes neuronales expresadas como producto y suma de matrices}
+
+En la sección anterior se computó la salida $\mathit{output}^i$ de cada neurona
+sigmoide por separado. A continuación veremos cómo obtener dichos valores en un
+sólo paso.
+
+Entiéndase por $\sigma(\bm{v})$ la aplicación de la función sigmoide a cada una
+de las coordenadas del vector $\bm{v}$. Es decir, si $\bm{v} = (v_1, \ldots,
+v_n)$, entonces  $\sigma(\bm{v}) = (\sigma(v_1), \ldots, \sigma(v_n))$.
+
+Sea $\bm{W}$ la matriz de pesos de la capa interna, definida como:
+
+$$
+\bm{W} =
+\begin{bmatrix}
+  w_1^1 & w_2^1 & w_3^1 \\
+  w_1^2 & w_2^2 & w_3^2 \\
+  w_1^3 & w_2^3 & w_3^3 \\
+  w_1^4 & w_2^4 & w_3^4 \\
+\end{bmatrix}
+$$
+
+Sea $\bm{b}$ el vector de sesgos de la capa interna:
+
+$$
+\bm{b} =
+\begin{bmatrix}
+  b^1 \\
+  b^2 \\
+  b^3 \\
+  b^4 \\
+\end{bmatrix}
+$$
+
+Utilizando $\bm{W}$ y $\bm{b}$ podemos escribir el vector $\bm{o}$ con las
+salidas $\mathit{output}^i$ de cada neurona interna de la siguiente manera:
+
+$$
+\bm{o} = \sigma(\bm{W} \cdot \bm{x} + \bm{b})
+$$
+
+Para corroborar esto, basta con expandir esta ecuación:
+
+\begin{align*}
+  \bm{o} = \sigma(\bm{W} \cdot \bm{x} + \bm{b})
+  & =
+  \sigma \left(
+    \begin{bmatrix}
+      w_1^1 & w_2^1 & w_3^1 \\
+      w_1^2 & w_2^2 & w_3^2 \\
+      w_1^3 & w_2^3 & w_3^3 \\
+      w_1^4 & w_2^4 & w_3^4 \\
+    \end{bmatrix}
+    \cdot
+    \begin{bmatrix}
+      x_1 \\
+      x_2 \\
+      x_3 \\
+      x_4 \\
+    \end{bmatrix}
+    +
+    \begin{bmatrix}
+      b^1 \\
+      b^2 \\
+      b^3 \\
+      b^4 \\
+    \end{bmatrix}
+  \right) \\
+  & =
+  \sigma \left(
+    \begin{bmatrix}
+      w_1^1 x_1 + w_2^1 x_2 + w_3^1 x_3 + b^1 \\
+      w_1^2 x_1 + w_2^2 x_2 + w_3^2 x_3 + b^2 \\
+      w_1^3 x_1 + w_2^3 x_2 + w_3^3 x_3 + b^3 \\
+      w_1^4 x_1 + w_2^4 x_2 + w_3^4 x_3 + b^4 \\
+    \end{bmatrix}
+  \right) \\
+  & =
+  \begin{bmatrix}
+    \sigma(w_1^1 x_1 + w_2^1 x_2 + w_3^1 x_3 + b^1) \\
+    \sigma(w_1^2 x_1 + w_2^2 x_2 + w_3^2 x_3 + b^2) \\
+    \sigma(w_1^3 x_1 + w_2^3 x_2 + w_3^3 x_3 + b^3) \\
+    \sigma(w_1^4 x_1 + w_2^4 x_2 + w_3^4 x_3 + b^4) \\
+  \end{bmatrix}
+  =
+  \begin{bmatrix}
+    \mathit{outputs^1} \\
+    \mathit{outputs^2} \\
+    \mathit{outputs^3} \\
+    \mathit{outputs^4} \\
+  \end{bmatrix}
+\end{align*}
+
+El expresar la salida de una red neuronal como productos y sumas de matrices no
+sólo simplifica la notación sino que además permite optimizar los cómputos al
+aprovechar librerías de álgebra lineal que implementen eficientemente dichas
+operaciones.
+
+
+\subsubsection{Redes neuronales multicapa}
+
+La idea de combinar varias neuronas se puede generalizar a múltiples capas,
+como se ilustra a continuación.
+
+\img{multilayer-neural-network.png}{Red neuronal
+multicapa}{img:multilayer-neural-network}
+
+En un modelo como en el de la figura \ref{img:multilayer-neural-network} se
+tienen $L$ capas de neuronas sigmoides, cada capa con su matriz de pesos
+$\bm{W^l}$, su vector de sesgos $\bm{b^l}$ y su vector de salidas $\bm{o^l}$
+(con $1 < l < L$).
+
+La salida de la primera capa se computar de la forma antes vista:
+
+$$\bm{o^1} = \sigma(\bm{W^1} \cdot \bm{x} + \bm{b^1})$$
+
+La salida de las capas subsecuentes ($l > 1$) se computan utilizando la salida
+de la capa anterior:
+
+$$\bm{o^l} = \sigma(\bm{W^l} \cdot \bm{o^{l-1}} + \bm{b^l})$$
+
+A continuación se presentará el mecanismo utilizado para ajustar los parámetros
+$\bm{W^l}$ y $\bm{b^l}$ de manera de obtener una red neuronal que aproxime una
+función de interés dado un conjunto de ejemplos de entrenamiento.
+
+
+\subsubsection{Algoritmo de entrenamiento}
+
+Se utiliza el algoritmo del
+\link{https://en.wikipedia.org/wiki/Gradient_descent}{gradiente descendente}
+para entrenar este tipo de modelos.
+
+Sea $y$ una función que se desea aproximar con una red neuronal con vector de
+pesos $\bm{w}$ y vector de sesgos $\bm{b}$. Bajo esta notación, $\bm{w}$ y
+$\bm{b}$ contienen los pesos y términos de sesgo de las neuronas de todas las
+capas de la red neuronal, respectivamente. Notaremos $x$ a cada ejemplo de
+entrenamiento y $\mathit{output}(x)$ a la salida de la red neuronal cuando el
+vector $\bm{x}$ es usado como entrada.
+
+Sea $C(\bm{w}, \bm{b})$ una función de costo que da una medida del error que se
+comete al aproximar $y$ con una red neuronal. Una función de costo tal es la
+siguiente, conocida como error cuadrático medio:
+
+$$C(\bm{w}, \bm{b}) = \frac{1}{2n} \sum_x \left\Vert
+                                          y(\bm{\bm{x}}) -
+                                          \mathit{output}(\bm{x})
+                                          \right\Vert^2$$
+
+Es decir, $C$ acumula el error cuadrático que se comete al aproximar $y$ con la
+red neuronal de parámetros $\bm{w}$ y $\bm{b}$ para cada ejemplo de
+entrenamiento $\bm{x}$.
+
+El objetivo del algoritmo del gradiente descendente es hallar $\bm{w}$ y
+$\bm{b}$ tales que $C(\bm{w}, \bm{b})$ sea lo más pequeño posible.
+
+La idea del algoritmo es computar el vector
+\link{https://en.wikipedia.org/wiki/Gradient}{gradiente} $\nabla C(\bm{w},
+\bm{b})$ de la función $C$ en el punto $(\bm{w}, \bm{b})$, que indica la
+dirección de mayor crecimiento de $C$ en el punto $(\bm{w}, \bm{b})$. Una vez
+obtenido $\nabla C(\bm{w}, \bm{b})$, se mueve $(\bm{w}, \bm{b})$ en esa
+dirección por una pequeña cantidad, bajo la hipótesis que $C(\bm{w}, \bm{b})
+\leq C((\bm{w}, \bm{b}) - \gamma \nabla C(\bm{w}, \bm{b}))$ para algún $\gamma$
+suficientemente pequeño. Esto se repite hasta alcanzar algún criterio de
+parada, usualmente un número máximo de iteraciones o una disminución del error
+entre paso y paso que caiga por debajo de cierto umbral.
+
+\img{gradient-descent.png}{Gradiente descendente}{img:gradient-descent}
+
+Notar que este algoritmo requiere que la función de costo $C$ sea diferenciable.
+
+En la práctica se usa una variante de este algoritmo, denominada
+\link{https://en.wikipedia.org/wiki/Stochastic_gradient_descent}{gradiente
+descendente estocástico}, que en cada iteración computa el error del modelo
+contra varios minibaches del conjunto de ejemplos de entrenamiento y luego los
+promedia, en lugar de computar el error contra todos los ejemplos de
+entrenamiento en un sólo paso. Esto mejora notablemente el tiempo que se demora
+en entrenar un modelo.
+
+Para computar $\nabla C$ se utiliza el algoritmo de
+\link{https://en.wikipedia.org/wiki/Backpropagation}{propagación hacia atrás}.
+Una buena explicación del mismo puede hallarse en el libro
+\link{http://neuralnetworksanddeeplearning.com/chap2.html}{Neural Networks and
+Deep Learning, capítulo 2}.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Red neuronal para reconocimiento de dígitos manuscritos                    %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\section{Red neuronal para reconocimiento de dígitos manuscritos}
+
+La red neuronal implementada en este trabajo recibe en la entrada una imagen en
+escala de grises de $28 \times 28$ pixeles, donde cada pixel es representado
+por un valor entre 0 y 255. Produce a la salida un vector $\bm{v}$ de 10
+coordenadas tal que para cada dígito $j \in 0, 1, \ldots, 9$, la coordenada
+$v_j$ indica la probabilidad estimada $p_j$ que la imagen recibida a la entrada
+corresponda al dígito $j$.
+
+\img{handwritten-digit-recognition-neural-network.png}
+    {Arquitectura para reconocimiento de dígitos manuscritos}
+    {img:handwritten-digit-recognition-neural-network}
+
+La arquitectura de la misma, ilustrada en la figura
+\ref{img:handwritten-digit-recognition-neural-network}, se compone de una capa
+de entrada de 784 neuronas, una para cada uno de los $28 \times 28$ pixeles de
+entrada, una capa interna de 30 neuronas, y una capa de salida de 10 neuronas,
+una para cada probabilidad $p_j$.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Arquitectura                                                               %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\section{Arquitectura}
+
+La arquitectura general del código escrito en este trabajo se compone de la
+siguiente jerarquía de clases C++:
+
+\begin{itemize}
+  \item \cc{BaseMatrix}: clase abstracta que representa matrices en
+    $\mathbb{R}^{m \times n}$. Declara métodos virtuales para realizar
+    operaciones sobre matrices (producto entre matrices, producto escalar,
+    suma, etc.) Requiere que las coordenadas de la matriz sean números de punto
+    flotante de 32 bits.
+
+  \begin{itemize}
+    \item \cc{NaiveMatrix}: Implementa los métodos virtuales de BaseMatrix de
+      forma naive, utilizando bucles anidados que operan sobre una coordenada
+      por vez.
+
+    \item \cc{SimdMatrix}: Delega la implementaciónde los métodos virtuales de
+      BaseMatrix en rutinas escritas en assembler que utilizan instrucciones
+      SIMD para realizar las mismas operaciones de a 4 coordenadas por vez
+      cuando sea posible.
+
+    \item \cc{EigenMatrix}: Delega la implementación de los métodos virtuales
+      de BaseMatrix en la librería Eigen. Más concretamente, mantiene una
+      instancia de la clase Eigen::MatrixXf en un campo privado y simplemente
+      delega cada operación al método equivalente en dicha clase.
+  \end{itemize}
+
+  \item \cc{Network<Matrix>}: Implementa la red neuronal de reconocimiento de
+    dígitos manuscritos. Esta clase es un template C++ que recibe un parámetro
+    de template \cc{Matrix}, que debe corresponder a alguna de las subclases de
+    BaseMatrix. Las tres implementaciones posibles de la red neuronal se
+    obtienen instanciando \cc{Network<NaiveMatrix>}, \cc{Network<SimdMatrix>} y
+    \cc{Network<EigenMatrix>}.
+\end{itemize}
+
+Todas estas clases están definidas en los archivos \cc{matrix.h} y
+\cc{network.h}.
+
+Además, se declaran algunas funciones en \cc{simd\_matrix.h} que son
+implementadas en \cc{simd\_matrix.asm} siguiendo la convención de llamadas del
+lenguaje C.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Implementación                                                             %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\section{Implementación}
+
+A continuación se explican los detalles implementativos de \cc{BaseMatrix} y
+sus subclases.
+
+
+\subsection{BaseMatrix}
+
+La clase \cc{BaseMatrix} establece una interfaz para operaciones de álgebra
+lineal entre matrices de números de punto flotante de precisión simple (tipo
+\cc{float} en C++.) En ella se definen métodos de utilidad compartidos por
+todas las subclases, como inicializadores, acceso a coeficientes, etc. Además,
+declara métodos virtuales que todas las subclases deberán implementar. Los
+principales se listan a continuación:
+
+\begin{itemize}
+  \item Adición: \\
+        \cc{void BaseMatrix::operator+=(const Matrix\& other)}
+  \item Substracción: \\
+        \cc{void BaseMatrix::operator-=(const Matrix\& other)}
+  \item Producto coordenada a coordenada: \\
+        \cc{Matrix BaseMatrix::CoeffWiseProduct(const Matrix\& other)}
+  \item Producto escalar: \\
+        \cc{void BaseMatrix::operator*=(float c)}
+  \item Producto entre matrices: \\
+        \cc{void BaseMatrix::operator*=(const Matrix\& other)}
+  \item Transposición: \\
+        \cc{Matrix BaseMatrix::Transpose()}
+\end{itemize}
+
+Nota: el tipo \cc{Matrix} es un template parameter que se reemplaza por el
+nombre de cada subclase que hereda de \cc{BaseMatrix}. Por ejemplo, en la clase
+\cc{SimdMatrix} la signatura del método para adición pasa a ser \cc{SimdMatrix
+SimdMatrix::CoeffWiseProduct(const SimdMatrix \&other)}.
+
+A continuación se ilustra la definición del resto de la clase \cc{BaseMatrix},
+que será útil como referencia al introducir el código para las subclases en las
+siguientes secciones.
+
+\begin{verbatim}
+  template <class Matrix>
+  class BaseMatrix {
+   public:
+    BaseMatrix(uint rows, uint cols) : rows_(rows), cols_(cols) {}
+
+    inline uint rows() const { return rows_; }
+    inline uint cols() const { return cols_; }
+
+    // Acceso a coeficientes
+    virtual float& operator()(uint i, uint j) = 0;
+    virtual float operator()(uint i, uint j) const = 0;
+
+    // Operaciones de álgebra lineal (omitidas por brevedad)
+    ...
+
+   protected:
+    uint rows_;
+    uint cols_;
+  };
+\end{verbatim}
+
+
+\subsection{NaiveMatrix}
+
+La clase \cc{NaiveMatrix} mantiene los coeficientes de la matriz en un vector
+\cc{m\_} de numeros de punto flotante (tipo \cc{vector<float>}), como se observa
+a continuación:
+
+\begin{verbatim}
+  class NaiveMatrix : public BaseMatrix<NaiveMatrix> {
+    ...
+
+   private:
+    std::vector<float> m_;  // los coeficientes de la matriz se mantienen aquí
+  };
+\end{verbatim}
+
+Los coeficientes son ordenados de izquierda a derecha y de arriba a abajo. Es
+decir, el valor para la coordenada $(i, j)$ se halla en \cc{m\_[i * columns +
+j]}.
+
+Esta clase implementa todas las operaciones de forma sencilla y sin ningún tipo
+de optimización, usando bucles anidados que operan sobre las coordenadas de la
+matriz de a una por vez.
+
+A continuación se lista el código de las mismas.
+
+
+\subsubsection{Adición}
+
+Primero se verifica que ambas matrices tengan el mismo tamaño, luego se suman
+los coeficientes uno por uno.
+
+\begin{verbatim}
+  void NaiveMatrix::operator+=(const NaiveMatrix& other) {
+    assert(rows_ == other.rows_);
+    assert(cols_ == other.cols_);
+    for(uint i = 0; i < rows_ * cols_; i++) {
+      m_[i] += other.m_[i];
+    }
+  }
+\end{verbatim}
+
+
+\subsubsection{Substracción}
+
+Análogo a la operación de adición.
+
+\begin{verbatim}
+  void NaiveMatrix::operator-=(const NaiveMatrix& other) {
+    assert(rows_ == other.rows_);
+    assert(cols_ == other.cols_);
+    for(uint i = 0; i < rows_ * cols_; i++) {
+      m_[i] -= other.m_[i];
+    }
+  }
+\end{verbatim}
+
+
+\subsubsection{Producto coordenada a coordenada}
+
+Se verifica que ambas matrices tengan el mismo tamaño y luego se multiplican
+los coeficientes uno a uno.
+
+\begin{verbatim}
+  NaiveMatrix NaiveMatrix::CoeffWiseProduct(const NaiveMatrix& other) const {
+    assert(rows_ == other.rows_);
+    assert(cols_ == other.cols_);
+    NaiveMatrix res(*this);
+    for(uint i = 0; i < res.m_.size(); i++) {
+      res.m_[i] *= other.m_[i];
+    }
+    return res;
+  }
+\end{verbatim}
+
+
+\subsubsection{Producto escalar}
+
+Se multiplican los coeficientes por una constante, de a uno por vez.
+
+\begin{verbatim}
+  void NaiveMatrix::operator*=(float c) {
+    for(uint i = 0; i < m_.size(); i++) {
+      m_[i] *= c;
+    }
+  }
+\end{verbatim}
+
+
+\subsubsection{Producto entre matrices}
+
+Se verifica que los tamaños de ambas matrices sean compatibles, luego se crea
+la matriz destino, y para cada coordenada $(i, j)$ en la matriz destino, se
+computa el producto interno entre la fija $i$ de la primera matriz y la columna
+$j$ en la segunda matriz, de a una coordenada por vez.
+
+\begin{verbatim}
+  void NaiveMatrix::operator*=(const NaiveMatrix& other) {
+    assert(cols_ == other.rows_);
+    uint new_rows = rows_;
+    uint new_cols = other.cols_;
+    vector<float> new_m(new_rows * new_cols, 0.);
+    NaiveMatrix transpose = other.Transpose();
+    for(uint i = 0; i < new_rows; i++) {
+      for(uint j = 0; j < new_cols; j++) {
+        for(uint k = 0; k < cols_; k++) {
+          new_m[new_cols * i + j] += operator()(i, k) * transpose(j, k);
+        }
+      }
+    }
+    m_ = new_m;
+    rows_ = new_rows;
+    cols_ = new_cols;
+  }
+\end{verbatim}
+
+
+\subsubsection{Transposición}
+
+Se crea la matriz destino y se copia cada coeficiente $(i,j)$ en las posición
+$(j,i)$ en la matriz destino, de a uno por vez.
+
+\begin{verbatim}
+  NaiveMatrix NaiveMatrix::Transpose() const {
+    NaiveMatrix res(cols_, rows_);
+    for(uint i = 0; i < rows_; i++) {
+      for(uint j = 0; j < cols_; j++) {
+        res(j, i) = operator()(i, j);
+      }
+    }
+    return res;
+  }
+\end{verbatim}
+
+
+\subsection{SimdMatrix}
+
+La clase \cc{SimdMatrix} delega las operaciones sobre matrices a rutinas
+escritas en assembler basadas en los algoritmos de \cc{NaiveMatrix}, pero que
+hacen uso de los registros XMM del procesador operando de a cuatro coordenadas
+por vez.
+
+Para los casos donde las matrices tienen un número de filas o columnas inferior
+a 4 (que dificulta el uso de registros XMM) se delega a una implementación
+ad-hoc en C++ que realiza las operaciones de forma idéntica a \cc{NaiveMatrix}.
+
+Al igual que \cc{NaiveMatrix}, mantiene los coeficientes en un
+\cc{vector<float>}. Las rutinas escritas en assembler reciben un puntero al
+bloque de memoria administrado por la instancia de \cc{vector<float>} y operan
+sobre este transparentemente.
+
+\begin{verbatim}
+  class SimdMatrix : public BaseMatrix<SimdMatrix> {
+    ...
+
+   private:
+    std::vector<float> m_;  // los coeficientes de la matriz se mantienen aquí
+  };
+\end{verbatim}
+
+A continuación se muestra el código de las rutinas escritas en assembler.
+
+
+\subsubsection{Adición}
+
+Esta rutina implementa una función C con la siguiente signatura:
+
+\begin{verbatim}
+  void simd_matrix_addition(uint size,
+                            float *m,
+                            const float *n)
+\end{verbatim}
+
+Dadas dos matrices $M$ y $N$ en $\mathbb{R}^{k \times q}$ con $k \times q \geq
+4$, esta rutina recibe un parámetro $\cc{size} = k \times q$ y dos punteros
+\cc{m} y \cc{n} a arreglos de floats de tamaño \cc{size} con los coeficientes
+de $M$ y $N$, respectivamente, computa $M' = M + N$ y escribe en \cc{m} los
+coeficientes de $M'$.
+
+\begin{verbatim}
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;; void simd_matrix_addition(uint size,       // rdi ;;
+  ;;                           float* m,        // rsi ;;
+  ;;                           const float* n)  // rdx ;;
+  ;; Assumes size >= 4.                                ;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  simd_matrix_addition:
+    push rbp
+    mov rbp, rsp
+    push rbx
+    push r12
+    push r13
+    push r14
+    push r15
+
+    ; Clear high 32 bits of rdi
+    mov edi, edi
+
+    ; Store in r12 the maximum offset we want use with the SIMD instruction
+    mov rax, rdi              ; rax = size
+    sub rax, 4                ; rax = size - 4
+    mov rbx, 4                ; rbx = 4
+    push rdx
+    mul rbx                   ; rax = 4 * (size - 4)
+    pop rdx
+    mov r12, rax              ; r12 = 4 * (size - 4)
+
+    ; Initialize r13 as the offset register used in main loop
+    xor r13, r13              ; r13 = 0
+
+    ; Main loop
+  simd_matrix_addition_loop:
+    movups xmm0, [rsi + r13]  ; Copy values at current offset in matrix m
+    movups xmm1, [rdx + r13]  ; Copy values at current offset in matrix n
+    addps xmm0, xmm1          ; Execute SIMD op
+    movups [rsi + r13], xmm0  ; Store results at current offset in matrix m
+    movups xmm2, xmm0         ; Backup xmm0 in xmm2 (see case 3 below)
+    mov r14, r13              ; Backup offset register r13 in r14
+
+    ; Compute difference between current and maximum offset
+    mov r15, r12              ; r15 = max offset
+    sub r15, r13              ; r15 = max offset - current offset
+
+    ; Case 1: current offset = max offset
+    jz exit_simd_matrix_addition_loop
+
+    ; Case 2: 4 or more elements left
+    cmp r15, 16
+    jge simd_matrix_addition_loop_next
+
+    ; Case 3: 1, 2 or 3 elements left
+    movups xmm0, [rsi + r12]  ; Copy values at max offset in matrix m
+    movups xmm1, [rdx + r12]  ; Copy values at max offset in matrix n
+    addps xmm0, xmm1          ; Execute SIMD op
+    movups [rsi + r12], xmm0  ; Store results at max offset in matrix m
+    movups [rsi + r14], xmm2  ; Restore backed-up values
+    jmp exit_simd_matrix_addition_loop
+
+  simd_matrix_addition_loop_next:
+    add r13, 16               ; Advance 4 elements
+    jmp simd_matrix_addition_loop
+
+  exit_simd_matrix_addition_loop:
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbx
+    pop rbp
+    ret
+\end{verbatim}
+
+Esencialmente el algoritmo se compone de un loop
+\cc{simd\_matrix\_addition\_loop} que lee de a cuatro elementos de $M$ y $N$
+por vez, que son almacenados en \cc{xmm0} y \cc{xmm1} respectivamente, luego se
+suman uno a uno con \cc{addps} y el resultado se guarda en $M$ pisando los 4
+valores actuales.
+
+En el caso donde restan 1, 2 o 3 valores, se avanza esa cantidad de posiciones
+en lugar de 4, se cargan los últimos 4 coeficientes de ambas matrices en
+\cc{xmm0} y \cc{xmm1} y se computa la suma con \cc{addps}. Esto recomputa y
+pisa algunos de los valores obtenidos en la iteración anterior, pero no
+representa un problema ya que se trata de operaciones coeficiente a coeficiente
+que no dependen de otros coeficientes en la matriz original.
+
+Nota: el código assembler mostrado aquí es en realidad generado por un macro
+NASM (ver macro \cc{coeff\_wise\_vector\_to\_vector\_op} definido en
+\cc{simd\_matrix.asm}) que toma una instrucción XMM como parámetro (por ejemplo
+\cc{addps}), y genera un procedimiento para operaciones coeficiente a
+coeficiente usando dicha instrucción. Esto es así pues la diferencia entre las
+implementaciones de las operaciones de adición, substracción y producto
+coordenada a coordenada son idénticas salvo por una única instrucción XMM que
+define la operación (\cc{addps}, \cc{subps} y \cc{mulps}, respectivamente.)
+
+
+\subsubsection{Substracción}
+
+Esta rutina implementa una función C con la siguiente signatura:
+
+\begin{verbatim}
+  void simd_matrix_subtraction(uint size,
+                               float *m,
+                               const float *n)
+\end{verbatim}
+
+Dadas dos matrices $M$ y $N$ en $\mathbb{R}^{k \times q}$ con $k \times q \geq
+4$, esta rutina recibe un parámetro $\cc{size} = k \times q$ y dos punteros
+\cc{m} y \cc{n} a arreglos de floats de tamaño \cc{size} con los coeficientes
+de $M$ y $N$, respectivamente, computa $M' = M - N$ y escribe en \cc{m} los
+coeficientes de $M'$.
+
+El código assembler es idéntico a la operación de adición, salvo que se
+reemplaza la instrucción \cc{addps} por \cc{subps}.
+
+
+\subsubsection{Producto coordenada a coordenada}
+
+Esta rutina implementa una función C con la siguiente signatura:
+
+\begin{verbatim}
+  void simd_matrix_coeff_wise_product(uint size,
+                                      float *m,
+                                      const float *n)
+\end{verbatim}
+
+Dadas dos matrices $M$ y $N$ en $\mathbb{R}^{k \times q}$ con $k \times q \geq
+4$, esta rutina recibe un parámetro $\cc{size} = k \times q$ y dos punteros
+\cc{m} y \cc{n} a arreglos de floats de tamaño \cc{size} con los coeficientes
+de $M$ y $N$, respectivamente, computa $M'_{i,j} = M_{i,j} \times N_{i,j}$ para
+cada $(i,j)$ y escribe en \cc{m} los coeficientes de $M'$.
+
+El código assembler es idéntico a la operación de adición, salvo que se
+reemplaza la instrucción \cc{addps} por \cc{mulps}.
+
+
+\subsubsection{Producto escalar}
+
+Esta rutina implementa una función C con la siguiente signatura:
+
+\begin{verbatim}
+  void simd_matrix_scalar_product(uint size,
+                                  float* m,
+                                  float c)
+\end{verbatim}
+
+Dadas una constante $c \in \mathbb{R}$ y una matriz $M$ en $\mathbb{R}^{k
+\times q}$ con $k \times q \geq 4$, esta rutina recibe un parámetro $\cc{size}
+= k \times q$ y un puntero \cc{m} a un arreglo de floats de tamaño \cc{size}
+con los coeficientes de $M$, computa $M' = c \times M$ y escribe en \cc{m} los
+coeficientes de $M'$.
+
+\begin{verbatim}
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;; void simd_matrix_scalar_product(uint size,  // rdi  ;;
+  ;;                                 float* m,   // rsi  ;;
+  ;;                                 float c)    // xmm0 ;;
+  ;; Assumes size >= 4.                                  ;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  simd_matrix_scalar_product:
+    push rbp
+    mov rbp, rsp
+    push rbx
+    push r12
+    push r13
+    push r14
+    push r15
+
+    ; Clear high 32 bits of rdi
+    mov edi, edi
+
+    ; Replicate value of xmm0
+    pshufd xmm0, xmm0, 0      ; xmm0 = c | c | c | c
+
+    ; Store in r12 the maximum offset we want use with mulps instruction
+    mov rax, rdi              ; rax = size
+    sub rax, 4                ; rax = size - 4
+    mov rbx, 4                ; rbx = 4
+    push rdx
+    mul rbx                   ; rax = 4 * (size - 4)
+    pop rdx
+    mov r12, rax              ; r12 = 4 * (size - 4)
+
+    ; Initialize r13 as the offset register used in scalar product loop
+    xor r13, r13              ; r13 = 0
+
+    ; Main loop
+  scalar_product_loop:
+    movups xmm1, [rsi + r13]  ; Copy values at current offset in matrix m
+    mulps xmm1, xmm0          ; Multiply values
+    movups [rsi + r13], xmm1  ; Store results at current offset in matrix m
+    movups xmm2, xmm1         ; Backup xmm0 in xmm2 (see case 3 below)
+    mov r14, r13              ; Backup offset register r13 in r14
+
+    ; Compute difference between current and maximum offset
+    mov r15, r12              ; r15 = max offset
+    sub r15, r13              ; r15 = max offset - current offset
+
+    ; Case 1: current offset = max offset
+    jz exit_scalar_product_loop
+
+    ; Case 2: 4 or more elements left
+    cmp r15, 16
+    jge scalar_product_loop_next
+
+    ; Case 3: 1, 2 or 3 elements left
+    movups xmm1, [rsi + r12]  ; Copy values at max offset in matrix m
+    mulps xmm1, xmm0          ; Add up values
+    movups [rsi + r12], xmm1  ; Store results at max offset in matrix m
+    movups [rsi + r14], xmm2  ; Restore backed-up values
+    jmp exit_scalar_product_loop
+
+  scalar_product_loop_next:
+    add r13, 16               ; Advance 4 elements
+    jmp scalar_product_loop
+
+  exit_scalar_product_loop:
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbx
+    pop rbp
+    ret
+\end{verbatim}
+
+El algoritmo replica la constante $c$ en los 4 floats contenidos en \cc{xmm0} y
+entra en el bucle \cc{scalar\_product\_loop}, donde se leen en \cc{xmm1} los
+coeficientes de $M$ de a cuatro por vez, se los multiplica por $c$ ejecutando
+\cc{mulps xmm1, xmm0} y se almacena el resultado en $M$ pisando los 4 valores
+anteriores.
+
+Al final de cada iteración se guarda en \cc{xmm2} una copia de los resultados
+obtenidos, y se guarda en \cc{r14} el offset actual. Esta copia se usa para
+restaurar posibles valores pisados durante la última iteración del bucle.
+
+En el caso donde restan 1, 2 o 3 valores, se avanza esa cantidad de posiciones
+en lugar de 4, se cargan los últimos 4 coeficientes de $M$ en \cc{xmm1} y se
+los multiplica por $c$ con \cc{mulps}. Esto vuelve a multiplicar por $c$
+algunos de los coeficientes tratados en la iteración anterior. Por ese motivo
+se los restaura a su estado anterior volcando el contenido del registro
+\cc{xmm2} en el offset indicado en \cc{r14}.
+
+
+\subsubsection{Producto entre matrices}
+
+Esta rutina implementa una función C con la siguiente signatura:
+
+\begin{verbatim}
+  void simd_matrix_product(uint rows1,
+                           uint cols1,
+                           uint cols2,
+                           const float* m,
+                           const float* nt,
+                           float* p)
+\end{verbatim}
+
+Dadas dos matrices $M \in \mathbb{R}^{k \times q}$ y $N \in \mathbb{R}^{q \times
+r}$ (con $k, q, r \geq 4$), esta rutina recibe los siguientes parámetros:
+
+\begin{itemize}
+  \item $\cc{rows1} = k$,
+  \item $\cc{cols1} = q$,
+  \item $\cc{cols2} = r$,
+  \item un puntero \cc{m} a un arreglo de floats de tamaño $k \times q$ con los
+    coeficientes de $M$,
+  \item un puntero \cc{nt} a un arreglo de floats de tamaño $r \times q$ con
+    los coeficientes de $N^t$ (la matriz transpuesta de $N$),
+  \item un puntero \cc{p} a un arreglo de floats de tamaño $k \times r$.
+\end{itemize}
+
+La rutina computa el producto matricial $P = M \times N$ y escribe en \cc{p}
+los coeficientes de $P$.
+
+\begin{verbatim}
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;; void simd_matrix_product(uint rows1,      // rdi ;;
+  ;;                          uint cols1,      // rsi ;;
+  ;;                          uint cols2,      // rdx ;;
+  ;;                          const float* m,  // rcx ;;
+  ;;                          const float* nt, // r8  ;;
+  ;;                          float* p)        // r9  ;;
+  ;;                                                  ;;
+  ;; Computes the product between matrices m and n,   ;;
+  ;; and stores the results in p.                     ;;
+  ;;                                                  ;;
+  ;; Assumes:                                         ;;
+  ;;  - rows1 >= 4, cols1 >= 4 and cols2 >= 4.        ;;
+  ;;  - rows2 = cols1 (note that rows2 is not         ;;
+  ;;    provided as an argument).                     ;;
+  ;;  - matrix nt is the transpose of n.              ;;
+  ;;  - cols2 corresponds to the number of columns in ;;
+  ;;    the original matrix n *before* transposition. ;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  simd_matrix_product:
+    push rbp
+    mov rbp, rsp
+    push rbx
+    push r12
+    push r13
+    push r14
+    push r15
+
+    ; Clear high 32 bits of rdi, rsi and rdx
+    mov edi, edi
+    mov esi, esi
+    mov edx, edx
+
+    ; Row index (i) in the resulting matrix
+    xor r12, r12
+
+    ; Iterate over rows in the resulting matrix
+  product_rows_loop:
+
+    ; Column index (j) in the resulting matrix
+    xor r13, r13
+
+    ; Iterate over columns in the resulting matrix
+  product_cols_loop:
+
+    ; Compute value for cell (i,j) in the result matrix and store it in xmm2
+    call product_compute_ij
+
+    ; Save value in xmm2 in cell (i,j) in the result matrix
+    call product_save_ij
+
+    ; Increase col index and iterate
+    inc r13
+    cmp r13, rdx
+    jne product_cols_loop
+
+    ; Increase row index and iterate
+    inc r12
+    cmp r12, rdi
+    jne product_rows_loop
+
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbx
+    pop rbp
+    ret
+\end{verbatim}
+
+La rutina itera sobre las filas de la matriz resultante $P$ (bucle
+\cc{product\_rows\_loop}) y sobre las columnas de la misma (bucle
+\cc{product\_cols\_loop}). Para cada coordenada $(i,j)$ en $P$, invoca la
+rutina \cc{product\_compute\_ij} que computa el valor $P_{i,j}$ y lo guarda en
+\cc{xmm2}, y luego invoca la rutina \cc{product\_save\_ij} que guarda el valor
+en \cc{xmm2} en la posición correspondiente a $P_{i,j}$ en \cc{p}.
+
+Ambas rutinas se elaboran a continuación.
+
+\begin{verbatim}
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;; Procedure product_compute_ij computes the value for cell (i,j) in      ;;
+  ;; the resulting matrix. Expects rdi = rows, rsi=cols1, rcx=pointer to m, ;;
+  ;; r8=pointer to nt (transpose of n), r9=pointer to resulting matrix,     ;;
+  ;; r12=i, r13=j.                                                          ;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  product_compute_ij:
+
+    ; Initialize accumulator
+    pxor xmm2, xmm2
+
+    ; Internal loop index (k)
+    xor r14, r14
+
+  product_internal_loop:
+
+    ; Load m[i, k..k+3] into xmm0 and n[k..k+3, j] into xmm1
+    call product_ijk_fetch
+
+    ; Compute dot-product between xmm0 and xmm1 and store it in xmm0
+    call product_ijk_reduce
+
+    ; Accumulate results
+    addss xmm2, xmm0
+
+    ; Compute number of remaining cells left
+    mov r15, rsi             ; r14 = cols1
+    sub r15, r14             ; r14 = cols1 - current cell
+    sub r15, 4               ; r14 = cols1 - current cell - 4
+
+    ; Case 1: no cells left
+    jz exit_product_internal_loop
+
+    ; Case 2: 4 or more cells left
+    cmp r15, 4
+    jge product_internal_loop_next
+
+    ; Case 3: 1, 2 or 3 columns left
+    mov r14, rsi             ; k = r14 = cols1
+    sub r14, 4               ; k = r14 = cols1 - 4
+
+    call product_ijk_fetch ; Load m[i, cols1-4..cols1] into xmm0
+                           ; and  n[cols1-4..cols1, j] into xmm1
+
+    ; 1 column left
+    cmp r15, 1
+    je product_internal_loop_1_column_left
+
+    ; 2 columns left
+    cmp r15, 2
+    je product_internal_loop_2_columns_left
+
+    ; 3 columns left
+    jmp product_internal_loop_3_columns_left
+
+    ; Case 3: 1 column left
+  product_internal_loop_1_column_left:
+
+    ; Compute the product between the last float in
+    ; xmm0 and xmm1 and store it in xmm0
+    call product_ijk_reduce_1_column_left
+
+    ; Finish reduction
+    jmp product_internal_loop_special_case_finish_reduction
+
+    ; Case 3: 2 columns left
+  product_internal_loop_2_columns_left:
+
+    ; Compute dot-product between the last 2 floats in
+    ; xmm0 and xmm1 and store it in xmm0
+    call product_ijk_reduce_2_columns_left
+
+    ; Finish reduction
+    jmp product_internal_loop_special_case_finish_reduction
+
+    ; Case 3: 3 columns left
+  product_internal_loop_3_columns_left:
+
+    ; Compute dot-product between the last 3 floats in
+    ; xmm0 and xmm1 and store it in xmm0
+    call product_ijk_reduce_3_columns_left
+
+  product_internal_loop_special_case_finish_reduction:
+
+    ; Accumulate results
+    addss xmm2, xmm0
+
+    jmp exit_product_internal_loop
+
+  product_internal_loop_next:
+    add r14, 4               ; Advance 4 cells
+    jmp product_internal_loop
+
+  exit_product_internal_loop:
+    ret
+\end{verbatim}
+
+La rutina \cc{product\_compute\_ij} computa el valor para $P_{i,j}$, que es lo
+mismo que computar el producto interno entre la $i$-ésima fila de $M$ y la
+$j$-éstima columna de $N$.
+
+Sin embargo, para mejorar la localidad de caché y aprovechar las operaciones
+con registros XMM, se usa la matriz transpuesta $N^t$ en lugar de $N$,
+computándose el producto interno entre la $i$-éstima fila de $M$ y la $j$-ésima
+fila de $N^t$.
+
+La rutina, pues, ejecuta un bucle \cc{product\_internal\_loop} que itera sobre
+los coeficientes de ambos vectores fila de a cuatro por vez (índice $k$
+almacenado en \cc{r14}), invoca \cc{product\_ijk\_fetch} que carga $M_{i,k
+\ldots k+3}$ en \cc{xmm0} y $N^{t}_{j,k \ldots k+3}$ en \cc{xmm1}, invoca
+\cc{product\_ijk\_reduce} que computa el producto interno entre \cc{xmm0} y
+\cc{xmm1} y acumula este resultado parcial en \cc{xmm2}.
+
+En los casos donde resten 1, 2 o 3 valores en la última iteración, en lugar de
+\cc{product\_ijk\_reduce} se invoca \cc{product\_ijk\_reduce\_1\_column\_left},
+\cc{product\_ijk\_reduce\_2\_columns\_left} o
+\cc{product\_ijk\_reduce\_3\_columns\_left} según corresponda.
+
+Finalmente el valor para $P_{i,j}$ se retorna en el registro \cc{xmm2}.
+
+A continuación se explican dichas rutinas.
+
+\begin{verbatim}
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;; Procedure product_ijk_fetch loads m[i, cols1-4..cols1] into xmm0 ;;
+  ;; and n[cols1-4..cols1, j] into xmm1. Expects r12=i, r13=j, r14=k, ;;
+  ;; rsi=cols1, rcx=pointer to m, r8=pointer to nt (transpose of n).  ;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  product_ijk_fetch:
+
+    ; Compute offset for m(i, k)
+    mov rax, r12              ; rax = i
+    push rdx
+    mul rsi                   ; rax = i * cols1
+    add rax, r14              ; rax = (i * cols1) + k
+    mov rbx, 4                ; rbx = 4
+    mul rbx                   ; rax = 4 * ((i * cols1) + k)
+    pop rdx
+
+    ; Store m(i, k..k+3) in xmm0
+    movups xmm0, [rcx + rax]  ; Copy values at current offset in matrix m
+
+    ; Compute offset for n^t(j, k)
+    mov rax, r13              ; rax = j
+    push rdx
+    mul rsi                   ; rax = j * cols1
+    add rax, r14              ; rax = (j * cols1) + k
+    mov rbx, 4                ; rbx = 4
+    mul rbx                   ; rax = 4 * ((j * cols1) + k)
+    pop rdx
+
+    ; Store nt(j, k..k+3) in xmm1
+    movups xmm1, [r8 + rax]  ; Copy values at current offset in matrix nt
+
+    ret
+\end{verbatim}
+
+La rutina \cc{product\_ijk\_fetch} computa el desplazamiento en \cc{m} donde se
+hallan los valores correspondientes a $M_{i,k \ldots k+3}$ y luego carga estos
+valores en \cc{xmm0}. Luego hace lo mismo para \cc{nt} y $N^{t}_{j,k \ldots
+k+3}$ y guarda estos valores en \cc{xmm1}.
+
+A continuación se explica la rutina \cc{product\_ijk\_reduce} y sus variantes
+para 1, 2 y 3 valores restantes.
+
+\begin{verbatim}
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;; Procedure product_ijk_reduce computes the dot product between ;;
+  ;; xmm0 and xmm1 and stores it in the low dword in xmm0.         ;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  product_ijk_reduce:
+    dpps xmm0, xmm1, 0xF1
+    ret
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;; Procedure product_ijk_reduce computes the dot product between ;;
+  ;; the high dword in  xmm0 and xmm1 and stores it in the low     ;;
+  ;; dword in xmm0.                                                ;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  product_ijk_reduce_1_column_left:
+    dpps xmm0, xmm1, 0x81
+    ret
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;; Procedure product_ijk_reduce computes the dot product between ;;
+  ;; the two higher dwords in  xmm0 and xmm1 and stores it in the  ;;
+  ;; low dword in xmm0.                                            ;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  product_ijk_reduce_2_columns_left:
+    dpps xmm0, xmm1, 0xC1
+    ret
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;; Procedure product_ijk_reduce computes the dot product between ;;
+  ;; the three higher dwords in  xmm0 and xmm1 and stores it in    ;;
+  ;; the low dword in xmm0.                                        ;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  product_ijk_reduce_3_columns_left:
+    dpps xmm0, xmm1, 0xE1
+    ret
+\end{verbatim}
+
+La rutina \cc{product\_ijk\_reduce} y sus variantes simplemente computan el
+producto interno entre los valores correspondientes en \cc{xmm0} y \cc{xmm1} y
+devuelven el resultado en \cc{xmm0}.
+
+El último paso de la rutina \cc{simd\_matrix\_product} consiste en guardar en
+\cc{p} el valor para $P_{i,j}$ obtenido con \cc{product\_compute\_ij}. Esto se
+realiza por medio de la rutina \cc{product\_save\_ij}, que se explica a
+continuación.
+
+\begin{verbatim}
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;; Procedure product_save_ij stores the computed value for (i,j) ;;
+  ;; in the resulting matrix. Expects r12=i, r13=j, rdx=cols2,     ;;
+  ;; r9=pointer to the resulting matrix.                           ;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  product_save_ij:
+
+    ; Compute offset for p(i, j)
+    mov rax, r12              ; rax = i
+    push rdx
+    mul rdx                   ; rax = i * cols2
+    add rax, r13              ; rax = (i * cols2) + j
+    mov rbx, 4                ; rbx = 4
+    mul rbx                   ; rax = 4 * ((i * cols2) + j)
+    pop rdx
+
+    ; Store xmm0 in p(i, j)
+    movss [r9 + rax], xmm2    ; Copy values at current offset in matrix m
+
+    ret
+\end{verbatim}
+
+La rutina \cc{product\_save\_ij} calcula el desplazamiento para $(i,j)$ en
+\cc{p} y guarda allí el valor para $P_{i,j}$ contenido en \cc{xmm2}, que fue
+computado en \cc{product\_compute\_ij}.
+
+
+\subsubsection{Transposición}
+
+Esta rutina implementa una función C con la siguiente signatura:
+
+\begin{verbatim}
+  void simd_matrix_transpose(uint rows,
+                             uint cols,
+                             const float* m,
+                             float* n)
+\end{verbatim}
+
+Dada una matriz $M$ en $\mathbb{R}^{k \times q}$ con $k \geq 4$, esta rutina
+recibe los siguientes parámetros:
+
+\begin{itemize}
+  \item $\cc{rows} = k$,
+  \item $\cc{cols} = q$,
+  \item un puntero \cc{m} a un arreglo de floats de tamaño $k \times q$ con los
+    coeficientes de $M$,
+  \item un puntero \cc{n} a un arreglo de floats de tamaño $q \times k$.
+\end{itemize}
+
+La rutina computa la matriz transpuesta $M^t \in \mathbb{R}^{q \times k}$ y
+escribe en \cc{n} los coeficientes de $M^t$.
+
+\begin{verbatim}
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;; void simd_matrix_transpose(uint rows,       // rdi ;;
+  ;;                            uint cols,       // rsi ;;
+  ;;                            const float* m,  // rdx ;;
+  ;;                            float* n)        // rcx ;;
+  ;; Assumes rows >= 4.                                 ;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  simd_matrix_transpose:
+    push rbp
+    mov rbp, rsp
+    push rbx
+    push r12
+    push r13
+    push r14
+    push r15
+
+    ; Clear high 32 bits of rdi and rsi
+    mov edi, edi
+    mov esi, esi
+
+    ; Column index (j)
+    xor r13, r13             ; r13 = 0
+
+    ; Iterate over columns
+  transpose_cols_loop:
+
+    ; Row index (i)
+    xor r12, r12             ; r12 = 0
+
+    ; Iterate over rows
+  transpose_rows_loop:
+
+    ; Copy m[i..i+3, j] to n[j, i..i+3]
+    call transpose_ij
+
+    ; Compute number of remaining rows left
+    mov r14, rdi             ; r14 = rows
+    sub r14, r12             ; r14 = rows - current row
+    sub r14, 4               ; r14 = rows - current row - 4
+
+    ; Case 1: no rows left
+    jz exit_transpose_rows_loop
+
+    ; Case 2: 4 or more rows left
+    cmp r14, 4
+    jge transpose_rows_loop_next
+
+    ; Case 3: 1, 2 or 3 rows left
+    mov r12, rdi             ; i = r12 = rows
+    sub r12, 4               ; i = r12 = rows - 4
+    call transpose_ij
+    jmp exit_transpose_rows_loop
+
+  transpose_rows_loop_next:
+    add r12, 4               ; Advance 4 rows
+    jmp transpose_rows_loop
+
+  exit_transpose_rows_loop:
+    ; Increase column index and iterate
+    inc r13
+    cmp r13, rsi
+    jne transpose_cols_loop
+
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbx
+    pop rbp
+    ret
+\end{verbatim}
+
+La rutina itera sobre las columnas de $M$ (bucle \cc{transpose\_cols\_loop},
+índice $j$) y las filas de $M$ (bucle \cc{transpose\_rows\_loop}, índice $i$)
+de a 4 filas por vez. Para cada coordenada $(i,j)$ en $M$ invoca la rutina
+\cc{transpose\_ij}, que copia los coeficientes $M_{i \ldots i+3,j}$ en
+$M^t_{j,i \ldots i+3}$.
+
+En los casos donde restan 1, 2 o 3 filas, retrocede el índice $i$ de manera que
+apunte a las últimas 4 filas de $M$ y luego invoca \cc{transpose\_ij}. Esto
+pisa algunos coeficientes ya transpuestos en $M^t$, pero no es un problema ya
+que \cc{transpose\_ij} sólo lee coeficientes de $M$, que no son modificados en
+ningún momento.
+
+A continuación se explica la rutina \cc{transpose\_ij}.
+
+\begin{verbatim}
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;; Procedure transpose_ij copies m[i..i+3, j] to n[j, i..i+3].     ;;
+  ;; Expects rdi=rows, rsi=cols, rdx=pointer to m, rcx=pointer to n, ;;
+  ;; r12=i, r13=j.                                                   ;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  transpose_ij:
+
+    ; Compute offset for m(i, j)
+    mov rax, r12             ; rax = i
+    push rdx
+    mul rsi                  ; rax = i * cols
+    add rax, r13             ; rax = (i * cols) + j
+    mov rbx, 4               ; rbx = 4
+    mul rbx                  ; rax = 4 * ((i * cols) + j)
+    pop rdx
+
+    ; Store m(i, j) in xmm0[0]
+    movss xmm0, [rdx + rax]  ; xmm0 = 00000000  | 00000000 | 00000000 | m(i, j)
+
+    ; Compute offset for m(i + 1, j)
+    mov rax, r12             ; rax = i
+    inc rax                  ; rax = i + 1
+    push rdx
+    mul rsi                  ; rax = (i + 1) * cols
+    add rax, r13             ; rax = ((i + 1) * cols) + j
+    mov rbx, 4               ; rbx = 4
+    mul rbx                  ; rax = 4 * (((i + 1) * cols) + j)
+    pop rdx
+
+    ; Store m(i + 1, j) in xmm1[1]
+    movss xmm1, [rdx + rax]  ; xmm1 = 00000000 | 00000000 | 00000000 | m(i+1,j)
+    pshufd xmm1, xmm1, 0xE1  ; xmm1 = 00000000 | 00000000 | m(i+1,j) | 00000000
+                             ; order = 11 10 00 01
+
+    ; Compute offset for m(i + 2, j)
+    mov rax, r12             ; rax = i
+    add rax, 2               ; rax = i + 2
+    push rdx
+    mul rsi                  ; rax = (i + 2) * cols
+    add rax, r13             ; rax = ((i + 2) * cols) + j
+    mov rbx, 4               ; rbx = 4
+    mul rbx                  ; rax = 4 * (((i + 2) * cols) + j)
+    pop rdx
+
+    ; Store m(i + 2, j) in xmm2[2]
+    movss xmm2, [rdx + rax]  ; xmm2 = 00000000 | 00000000 | 00000000 | m(i+2,j)
+    pshufd xmm2, xmm2, 0xC6  ; xmm2 = 00000000 | m(i+2,j) | 00000000 | 00000000
+                             ; order = 11 00 01 10
+
+    ; Compute offset for m(i + 3, j)
+    mov rax, r12             ; rax = i
+    add rax, 3               ; rax = i + 3
+    push rdx
+    mul rsi                  ; rax = (i + 3) * cols
+    add rax, r13             ; rax = ((i + 3) * cols) + j
+    mov rbx, 4               ; rbx = 4
+    mul rbx                  ; rax = 4 * (((i + 3) * cols) + j)
+    pop rdx
+
+    ; Store m(i + 3, j) in xmm3[3]
+    movss xmm3, [rdx + rax]  ; xmm3 = 00000000 | 00000000 | 00000000 | m(i+3,j)
+    pshufd xmm3, xmm3, 0x27  ; xmm3 = m(i+3,j) | 00000000 | 00000000 | 00000000
+                             ; order = 00 10 01 11
+
+    ; Merge values in one single XMM register
+    addps xmm0, xmm1         ; xmm0 = 00000000 | 00000000 | m(i+1,j) |   m(i,j)
+    addps xmm0, xmm2         ; xmm0 = 00000000 | m(i+2,j) | m(i+1,j) |   m(i,j)
+    addps xmm0, xmm3         ; xmm0 = m(i+3,j) | m(i+2,j) | m(i+1,j) |   m(i,j)
+
+    ; Compute offset for n(j, i)
+    mov rax, r13             ; rax = j
+    push rdx
+    mul rdi                  ; rax = j * rows
+    add rax, r12             ; rax = (j * rows) + i
+    mov rbx, 4               ; rbx = 4
+    mul rbx                  ; rax = 4 * ((j * rows) + i)
+    pop rdx
+
+    ; Copy contents of xmm0 to n[j, i..i+3]
+    movups [rcx + rax], xmm0
+
+    ; End of procedure
+    ret
+\end{verbatim}
+
+La rutina \cc{transpose\_ij} realiza los siguientes pasos:
+
+\begin{enumerate}
+  \item se guarda $M_{i,j}$ en los bits $0 \dots 31$ de \cc{xmm0},
+  \item se guarda $M_{i+1,j}$ en los bits $32 \dots 63$ de \cc{xmm1},
+  \item se guarda $M_{i+2,j}$ en los bits $64 \dots 95$ de \cc{xmm2},
+  \item se guarda $M_{i+3,j}$ en los bits $96 \dots 120$ de \cc{xmm3},
+  \item todos los demás bits de dichos registros se ponen en $0$,
+  \item se suman \cc{xmm0}, \cc{xmm1}, \cc{xmm2} y \cc{xmm3} coordenada a
+    coordenada y se guarda el resultado en \cc{xmm0}, de manera de obtener
+    $\cc{xmm0} = M_{i \ldots i+3,j}$,
+  \item se computa el desplazamiento para $(j,i)$ en \cc{n} (arreglo
+    correspondiente a $M^t$),
+  \item se vuelca allí el contenido de \cc{xmm0}, de manera que $\cc{n[j,
+    i..i+3]} = M_{i \ldots i+3,j}$.
+\end{enumerate}
+
+Esto concluye la rutina \cc{simd\_matrix\_transpose}.
+
+
+\subsection{EigenMatrix}
+
+La clase \cc{EigenMatrix} actúa como un envoltorio alrededor de la clase
+\cc{Eigen::MatrixXf} de la librería Eigen:
+
+\begin{verbatim}
+class EigenMatrix : public BaseMatrix<EigenMatrix> {
+  ...
+
+ private:
+  Eigen::MatrixXf m_;
+};
+\end{verbatim}
+
+Todas las operaciones que esta clase implementa son delegadas a las operaciones
+equivalentes en \cc{Eigen::MatrixXf}. El siguiente ejemplo corresponde a la
+operación de suma entre matrices:
+
+\begin{verbatim}
+  void EigenMatrix::operator+=(const EigenMatrix& other) {
+    m_ += other.m_;
+  }
+\end{verbatim}
+
+El resto de las operaciones se delegan al método correspondiente en la clase
+\cc{Eigen::MatrixXf} de forma similar.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Experimentos                                                               %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\section{Experimentos}
+
+Pendiente.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Resultados                                                                 %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\section{Resultados}
+
+Pendiente.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Discusión                                                                  %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\section{Discusión}
+
+Pendiente.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Conclusiones                                                               %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\section{Conclusiones}
+
+Pendiente.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Apéndice: GUI                                                              %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\section{Apéndice: GUI}
+
+Pendiente.
+
+
+
+\end{document}

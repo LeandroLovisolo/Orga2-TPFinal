@@ -7,7 +7,7 @@ NUM_EPOCHS   = 100
 
 ################################################################################
 
-.PHONY: all data ui plots informe publish clean \
+.PHONY: all data ui plots informe publish clean clean-data \
         binaries binaryO0 binaryO1 binaryO2 binaryO3 \
         experiments experiments-naive experiments-simd experiments-eigen \
         experiment-naive-O0 experiment-naive-O1 \
@@ -23,7 +23,12 @@ ui:
 	make -C src/cc ui
 
 bundle: clean
-	tar zcf bundle.tar.gz data lib Makefile src stats
+	mkdir Orga2-TPFinal
+	mkdir Orga2-TPFinal/data
+	cp data/mnist.pkl.gz Orga2-TPFinal/data
+	cp -r lib Makefile README.md src stats Orga2-TPFinal
+	tar zcf Orga2-TPFinal.tar.gz Orga2-TPFinal
+	rm -rf Orga2-TPFinal
 
 publish:
 	git subtree push --prefix src/ui origin gh-pages
@@ -31,9 +36,10 @@ publish:
 clean:
 	make -C src/cc clean
 	make -C src/tex clean
-	rm -f $(TRAIN_IMAGES) $(TRAIN_LABELS) \
-        $(TEST_IMAGES) $(TEST_LABELS) \
-        src/cc/nnO0 src/cc/nnO1 src/cc/nnO2 src/cc/nnO3
+	rm -rf $(TRAIN_IMAGES) $(TRAIN_LABELS) \
+         $(TEST_IMAGES) $(TEST_LABELS) \
+         src/cc/nnO0 src/cc/nnO1 src/cc/nnO2 src/cc/nnO3 \
+         src/__pycache__ src/python/*.pyc src/python/plot/*.pyc
 
 ################################################################################
 
@@ -58,17 +64,32 @@ binaryO3:
 
 data: $(TRAIN_IMAGES) $(TRAIN_LABELS) $(TEST_IMAGES) $(TEST_LABELS)
 
+${TRAIN_IMAGES}.gz:
+	cd data; wget http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz
+
+${TRAIN_LABELS}.gz:
+	cd data; wget http://yann.lecun.com/exdb/mnist/train-labels-idx1-ubyte.gz
+
+${TEST_IMAGES}.gz:
+	cd data; wget http://yann.lecun.com/exdb/mnist/t10k-images-idx3-ubyte.gz
+
+${TEST_LABELS}.gz:
+	cd data; wget http://yann.lecun.com/exdb/mnist/t10k-labels-idx1-ubyte.gz
+
 $(TRAIN_IMAGES): ${TRAIN_IMAGES}.gz
-	gunzip --keep $^
+	gunzip $^
 
 $(TRAIN_LABELS): ${TRAIN_LABELS}.gz
-	gunzip --keep $^
+	gunzip $^
 
 $(TEST_IMAGES): ${TEST_IMAGES}.gz
-	gunzip --keep $^
+	gunzip $^
 
 $(TEST_LABELS): ${TEST_LABELS}.gz
-	gunzip --keep $^
+	gunzip $^
+
+clean-data:
+	rm -f $(TRAIN_IMAGES) $(TRAIN_LABELS) $(TEST_IMAGES) $(TEST_LABELS)
 
 ################################################################################
 

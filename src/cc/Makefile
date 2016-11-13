@@ -19,7 +19,7 @@ EIGEN_DIR = ../../lib/eigen
 GTEST_DIR = ../../lib/googletest/googletest
 GMOCK_DIR = ../../lib/googletest/googlemock
 
-CXX        = clang++
+CXX        = g++
 CXXOFLAG   = -O3
 CXXFLAGS  := $(CXXFLAGS) -std=c++14 \
              -I $(LIB_DIR) \

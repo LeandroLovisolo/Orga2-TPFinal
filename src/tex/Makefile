@@ -7,4 +7,4 @@ informe.pdf: informe.tex
 	pdflatex -interaction=nonstopmode -halt-on-error informe.tex
 
 clean:
-	rm -f informe.pdf *.aux *.log *.toc *.out *.idx *.ind *.ilg
+	rm -f *.aux *.log *.toc *.out *.idx *.ind *.ilg

@@ -37,13 +37,6 @@ EMXXFLAGS  = -std=c++14
 
 ################################################################################
 
-TRAIN_IMAGES = ../../data/train-images-idx3-ubyte
-TRAIN_LABELS = ../../data/train-labels-idx1-ubyte
-TEST_IMAGES = ../../data/t10k-images-idx3-ubyte
-TEST_LABELS = ../../data/t10k-labels-idx1-ubyte
-
-################################################################################
-
 .PHONY: all clean data
 
 all: data $(BINARIES)
@@ -75,21 +68,8 @@ gtest_main.o:
 
 -include $(DEP)
 
-data: $(TRAIN_IMAGES) $(TRAIN_LABELS) $(TEST_IMAGES) $(TEST_LABELS)
-
-$(TRAIN_IMAGES): ${TRAIN_IMAGES}.gz
-	gunzip --keep $^
-
-$(TRAIN_LABELS): ${TRAIN_LABELS}.gz
-	gunzip --keep $^
-
-$(TEST_IMAGES): ${TEST_IMAGES}.gz
-	gunzip --keep $^
-
-$(TEST_LABELS): ${TEST_LABELS}.gz
-	gunzip --keep $^
-
 clean:
-	rm -f $(BINARIES) *.o *.d $(MAIN_JS_DATA) \
-        $(TRAIN_IMAGES) $(TRAIN_LABELS) \
-        $(TEST_IMAGES) $(TEST_LABELS)
+	rm -f $(MAIN) $(TESTS) *.o *.d
+
+clean-ui:
+	rm -f $(MAIN_JS) $(MAIN_JS_DATA)

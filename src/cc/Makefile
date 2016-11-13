@@ -37,9 +37,9 @@ EMXXFLAGS  = -std=c++14
 
 ################################################################################
 
-.PHONY: all clean data
+.PHONY: all clean
 
-all: data $(BINARIES)
+all: $(BINARIES)
 
 $(MAIN): $(MAIN_SRC:.cc=.o) simd_matrix.o
 	$(LD) $(LDFLAGS) -o $@ $^

@@ -10,7 +10,7 @@ MAIN_JS         = ../ui/nn.js
 MAIN_JS_DATA    = ../ui/nn.data
 MAIN_JS_SRC     = nn_js.cc matrix.cc
 
-BINARIES        = $(MAIN) $(TESTS) $(MAIN_JS)
+BINARIES        = $(MAIN) $(TESTS)
 
 ################################################################################
 
@@ -37,9 +37,11 @@ EMXXFLAGS  = -std=c++14
 
 ################################################################################
 
-.PHONY: all clean
+.PHONY: all ui clean clean-ui
 
 all: $(BINARIES)
+
+ui: $(MAIN_JS)
 
 $(MAIN): $(MAIN_SRC:.cc=.o) simd_matrix.o
 	$(LD) $(LDFLAGS) -o $@ $^

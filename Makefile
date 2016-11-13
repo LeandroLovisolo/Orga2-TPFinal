@@ -7,7 +7,7 @@ NUM_EPOCHS   = 100
 
 ################################################################################
 
-.PHONY: all data plots informe publish clean \
+.PHONY: all data ui plots informe publish clean \
         binaries binaryO0 binaryO1 binaryO2 binaryO3 \
         experiments experiments-naive experiments-simd experiments-eigen \
         experiment-naive-O0 experiment-naive-O1 \
@@ -19,6 +19,12 @@ NUM_EPOCHS   = 100
 
 all: binaries
 
+ui:
+	make -C src/cc ui
+
+bundle: clean
+	tar zcf bundle.tar.gz data lib Makefile src stats
+
 publish:
 	git subtree push --prefix src/ui origin gh-pages
 
@@ -28,9 +34,6 @@ clean:
 	rm -f $(TRAIN_IMAGES) $(TRAIN_LABELS) \
         $(TEST_IMAGES) $(TEST_LABELS) \
         src/cc/nnO0 src/cc/nnO1 src/cc/nnO2 src/cc/nnO3
-
-bundle: clean
-	tar zcf bundle.tar.gz data lib Makefile src stats
 
 ################################################################################
 

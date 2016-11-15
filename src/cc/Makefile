@@ -32,7 +32,7 @@ NASM       = nasm
 NASM_FLAGS = -f elf64 -g -F dwarf
 LD         = $(CXX)
 LDFLAGS    = $(CXXFLAGS)
-EMXX       = /usr/lib/emscripten/em++
+EMXX       = em++
 EMXXFLAGS  = -std=c++14
 
 ################################################################################

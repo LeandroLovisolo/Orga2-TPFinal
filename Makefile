@@ -41,6 +41,9 @@ clean:
          src/cc/nnO0 src/cc/nnO1 src/cc/nnO2 src/cc/nnO3 \
          src/__pycache__ src/python/*.pyc src/python/plot/*.pyc
 
+clean-ui:
+	make -C src/cc clean-ui
+
 ################################################################################
 
 binaries: data binaryO0 binaryO1 binaryO2 binaryO3 default-binary-and-ui

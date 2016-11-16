@@ -291,8 +291,8 @@ void Network<Matrix, Vector>::SGD(const TrainingData<Vector>& training_data,
       if(!test_data.empty()) {
         auto dt = duration_cast<microseconds>(t - t0).count();
         if(dt > 10000) {
-          std::cout << "\r[Epoch " << (i + 1) << "] Minibatch "
-                    << (j / mini_batch_size + 1) << " / "
+          std::cout << "\r[Epoch " << (i + 1) << " / " << epochs << "] "
+                    << "Minibatch " << (j / mini_batch_size + 1) << " / "
                     << (shuffled_training_data.size() / mini_batch_size);
           t0 = steady_clock::now();
         }
@@ -312,7 +312,7 @@ void Network<Matrix, Vector>::SGD(const TrainingData<Vector>& training_data,
     // Report progress
     if(!test_data.empty()) {
       float accuracy = (float) Evaluate_(test_data) / test_data.size() * 100;
-      std::cout << "\r[Epoch " << (i + 1) << "] "
+      std::cout << "\r[Epoch " << (i + 1) << " / " << epochs << "] "
                 << accuracy << "\% accuracy on test data." << std::endl;
     }
   }
@@ -320,8 +320,8 @@ void Network<Matrix, Vector>::SGD(const TrainingData<Vector>& training_data,
   // Statistics
   auto total_t = duration_cast<seconds>(steady_clock::now() - total_t0).count();
   auto epoch_avg = (double) total_t / epochs;
-  std::cout << "Total training time: " << total_t << std::endl
-            << "Average epoch time: " << epoch_avg << std::endl;
+  std::cout << "Total training time: " << total_t << " seconds" << std::endl
+            << "Average epoch time: " << epoch_avg << "seconds" << std::endl;
 #ifndef EMSCRIPTEN
   if(!stats_file.empty()) {
     std::ofstream file(stats_file);

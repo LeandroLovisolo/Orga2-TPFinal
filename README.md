@@ -19,11 +19,11 @@ Prerequisitos
 
 Las instrucciones a continuación asumen un sistema basado en Debian.
 
- * Instalar herramientas de desarrollo básicas (make, gcc, g++, etc.): \
+ * Instalar herramientas de desarrollo básicas (make, gcc, g++, etc.):  
    `$ apt-get install build-essential`
- * Instalar compilador clang: \
+ * Instalar compilador clang:  
    `$ apt-get install clang`
- * Instalar compilador NASM: \
+ * Instalar compilador NASM:  
    `$ apt-get install nasm`
 
 Compilación
@@ -33,11 +33,11 @@ Nota: se requiere una conexión a internet ya que la primera vez que se invoca
 `make` se descargan de internet los datos de entrenamiento para la red
 neuronal.
 
-  * Ingresar al directorio raíz del proyecto: \
-    `$ cd Orga2-TPFinal` \
+ * Ingresar al directorio raíz del proyecto:  
+   `$ cd Orga2-TPFinal`  
    (reemplazar `Orga2-TPFinal` por la ruta correspondiente)
-  * Invocar make: \
-    `$ make`
+ * Invocar make:  
+   `$ make`
 
 Ejecución
 ---------
@@ -45,19 +45,19 @@ Ejecución
 Las siguientes son instrucciones para ejecutar el proceso de entrenamiento del
 modelo.
 
-  * Ingresar al directorio raíz del proyecto: \
-    `$ cd Orga2-TPFinal` \
+ * Ingresar al directorio raíz del proyecto:  
+    `$ cd Orga2-TPFinal`  
    (reemplazar `Orga2-TPFinal` por la ruta correspondiente)
  * Para lanzar el proceso de entrenamiento con la configuración por defecto
-   (implementación SIMD, 10 épocas de entrenamiento) ejecutar: \
-   ```$ src/cc/nn```
+   (implementación SIMD, 10 épocas de entrenamiento) ejecutar:  
+   `$ src/cc/nn`
  * Para utilizar otra implementación, invocar `$ src/cc/nn -m <impl>`, donde
-   `<impl>` puede ser `naive`, `simd` o `eigen`. Por ejemplo: \
+   `<impl>` puede ser `naive`, `simd` o `eigen`. Por ejemplo:  
    `$ src/cc/nn -m naive`
  * Para especificar un número de épocas de entrenamiento, por ejemplo 100,
-   ejecutar lo siguiente: \
+   ejecutar lo siguiente:  
    `$ src/cc/nn -n 100`
- * Para obtener una lista completa de los parámetros disponibles, ejecutar: \
+ * Para obtener una lista completa de los parámetros disponibles, ejecutar:  
    `$ src/cc/nn --help`
 
 El comando `make` también genera binarios compilados con distintos niveles de
@@ -94,10 +94,10 @@ Interfaz gráfica
 La interfaz gráfica se incluye precompilada, y se puede acceder de acuerdo a
 las siguientes instrucciones:
 
- * Ingresar al directorio donde se radica la interfaz gráfica: \
-   `$ cd Orga2-TPFinal/src/ui` \
+ * Ingresar al directorio donde se radica la interfaz gráfica:  
+   `$ cd Orga2-TPFinal/src/ui`  
    (reemplazar `Orga2-TPFinal` por la ruta correspondiente)
- * Lanzar un servidor web: \
+ * Lanzar un servidor web:  
    `$ python -m SimpleHTTPServer`
  * Ingresar a [http://localhost:80000](http://localhost:8000) con cualquier
    navegador web moderno.
@@ -125,11 +125,11 @@ pero se incluyen aquí por completitud.)
 
 El primer paso es instalar los siguientes paquetes de Debian:
 
- * Instalar cmake: \
+ * Instalar cmake:  
    `$ apt-get install cmake`
- * Instalar Python 2.7: \
+ * Instalar Python 2.7:  
    `$ apt-get install python2.7`
- * Instalar node.js: \
+ * Instalar node.js:  
    `$ apt-get install nodejs`
 
 Seguidamente se debe descargar el SDK de Emscripten:
@@ -137,15 +137,15 @@ https://s3.amazonaws.com/mozilla-games/emscripten/releases/emsdk-portable.tar.gz
 
 Luego deben seguirse los pasos a continuación:
 
- * Descomprimir el archivo descargado anteriormente: \
+ * Descomprimir el archivo descargado anteriormente:  
    `$ tar xzvf emsdk-portable.tar.gz`
- * Ingresar al directorio de Emscripten: \
+ * Ingresar al directorio de Emscripten:  
    `$ cd emsdk_portable`
- * Actualizar el registro de herramientas disponibles: \
+ * Actualizar el registro de herramientas disponibles:  
    `$ ./emsdk update`
- * Descargar e instalar el SDK más reciente: \
+ * Descargar e instalar el SDK más reciente:  
    `$ ./emsdk install latest`
- * Activar el SDK recién obtenido: \
+ * Activar el SDK recién obtenido:  
    `$ ./emsdk activate latest`
 
 Esto finaliza la instalación de Emscripten.
@@ -154,24 +154,24 @@ Esto finaliza la instalación de Emscripten.
 
 Las siguientes son instrucciones para recompilar el archivo `src/ui/nn.js`.
 
- * Ingresar al directorio de Emscripten: \
-   `$ cd emsdk_portable` \
+ * Ingresar al directorio de Emscripten:  
+   `$ cd emsdk_portable`  
    (reemplazar `emsdk_portable` por la ruta correspondiente)
  * Actualizar las variables de entorno para reflejar la instalación de
    Emscripten: \
    `$ source ./emsdk_env.sh`
- * Ingresar al directorio raíz del proyecto: \
-   `$ cd Orga2-TPFinal` \
+ * Ingresar al directorio raíz del proyecto:  
+   `$ cd Orga2-TPFinal`  
    (reemplazar `Orga2-TPFinal` por la ruta correspondiente)
- * Recompilar interfaz gráfica: \
+ * Recompilar interfaz gráfica:  
    `$ make clean-ui ui`
 
 Esto finaliza la recompilación de la interfaz gráfica. Para acceder a la misma,
 seguir los mismos pasos mencionados antes:
 
- * Ingresar al directorio donde se radica la interfaz gráfica: \
+ * Ingresar al directorio donde se radica la interfaz gráfica:  
    `$ src/ui`
- * Lanzar un servidor web: \
+ * Lanzar un servidor web:  
    `$ python -m SimpleHTTPServer`
  * Ingresar a [http://localhost:80000](http://localhost:8000) con cualquier
    navegador web moderno.

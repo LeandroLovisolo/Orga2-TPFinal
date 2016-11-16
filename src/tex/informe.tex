@@ -76,6 +76,7 @@
 
 %%%%%%%%%% Código - Inicio %%%%%%%%%%
 \newcommand{\cc}[1]{\texttt{#1}}
+\DefineVerbatimEnvironment{code}{Verbatim}{frame=single}
 %%%%%%%%%% Código - Fin %%%%%%%%%%
 
 
@@ -672,7 +673,7 @@ A continuación se ilustra la definición del resto de la clase \cc{BaseMatrix},
 que será útil como referencia al introducir el código para las subclases en las
 siguientes secciones.
 
-\begin{verbatim}
+\begin{code}
   template <class Matrix>
   class BaseMatrix {
    public:
@@ -692,7 +693,7 @@ siguientes secciones.
     uint rows_;
     uint cols_;
   };
-\end{verbatim}
+\end{code}
 
 
 \subsection{NaiveMatrix}
@@ -701,14 +702,14 @@ La clase \cc{NaiveMatrix} mantiene los coeficientes de la matriz en un vector
 \cc{m\_} de numeros de punto flotante (tipo \cc{vector<float>}), como se observa
 a continuación:
 
-\begin{verbatim}
+\begin{code}
   class NaiveMatrix : public BaseMatrix<NaiveMatrix> {
     ...
 
    private:
     std::vector<float> m_;  // los coeficientes de la matriz se mantienen aquí
   };
-\end{verbatim}
+\end{code}
 
 Los coeficientes son ordenados de izquierda a derecha y de arriba a abajo. Es
 decir, el valor para la coordenada $(i, j)$ se halla en \cc{m\_[i * columns +
@@ -726,7 +727,7 @@ A continuación se lista el código de las mismas.
 Primero se verifica que ambas matrices tengan el mismo tamaño, luego se suman
 los coeficientes uno por uno.
 
-\begin{verbatim}
+\begin{code}
   void NaiveMatrix::operator+=(const NaiveMatrix& other) {
     assert(rows_ == other.rows_);
     assert(cols_ == other.cols_);
@@ -734,14 +735,14 @@ los coeficientes uno por uno.
       m_[i] += other.m_[i];
     }
   }
-\end{verbatim}
+\end{code}
 
 
 \subsubsection{Substracción}
 
 Análogo a la operación de adición.
 
-\begin{verbatim}
+\begin{code}
   void NaiveMatrix::operator-=(const NaiveMatrix& other) {
     assert(rows_ == other.rows_);
     assert(cols_ == other.cols_);
@@ -749,7 +750,7 @@ Análogo a la operación de adición.
       m_[i] -= other.m_[i];
     }
   }
-\end{verbatim}
+\end{code}
 
 
 \subsubsection{Producto coordenada a coordenada}
@@ -757,7 +758,7 @@ Análogo a la operación de adición.
 Se verifica que ambas matrices tengan el mismo tamaño y luego se multiplican
 los coeficientes uno a uno.
 
-\begin{verbatim}
+\begin{code}
   NaiveMatrix NaiveMatrix::CoeffWiseProduct(const NaiveMatrix& other) const {
     assert(rows_ == other.rows_);
     assert(cols_ == other.cols_);
@@ -767,20 +768,20 @@ los coeficientes uno a uno.
     }
     return res;
   }
-\end{verbatim}
+\end{code}
 
 
 \subsubsection{Producto escalar}
 
 Se multiplican los coeficientes por una constante, de a uno por vez.
 
-\begin{verbatim}
+\begin{code}
   void NaiveMatrix::operator*=(float c) {
     for(uint i = 0; i < m_.size(); i++) {
       m_[i] *= c;
     }
   }
-\end{verbatim}
+\end{code}
 
 
 \subsubsection{Producto entre matrices}
@@ -790,7 +791,7 @@ la matriz destino, y para cada coordenada $(i, j)$ en la matriz destino, se
 computa el producto interno entre la fija $i$ de la primera matriz y la columna
 $j$ en la segunda matriz, de a una coordenada por vez.
 
-\begin{verbatim}
+\begin{code}
   void NaiveMatrix::operator*=(const NaiveMatrix& other) {
     assert(cols_ == other.rows_);
     uint new_rows = rows_;
@@ -808,7 +809,7 @@ $j$ en la segunda matriz, de a una coordenada por vez.
     rows_ = new_rows;
     cols_ = new_cols;
   }
-\end{verbatim}
+\end{code}
 
 
 \subsubsection{Transposición}
@@ -816,7 +817,7 @@ $j$ en la segunda matriz, de a una coordenada por vez.
 Se crea la matriz destino y se copia cada coeficiente $(i,j)$ en las posición
 $(j,i)$ en la matriz destino, de a uno por vez.
 
-\begin{verbatim}
+\begin{code}
   NaiveMatrix NaiveMatrix::Transpose() const {
     NaiveMatrix res(cols_, rows_);
     for(uint i = 0; i < rows_; i++) {
@@ -826,7 +827,7 @@ $(j,i)$ en la matriz destino, de a uno por vez.
     }
     return res;
   }
-\end{verbatim}
+\end{code}
 
 
 \subsection{SimdMatrix}
@@ -845,14 +846,14 @@ Al igual que \cc{NaiveMatrix}, mantiene los coeficientes en un
 bloque de memoria administrado por la instancia de \cc{vector<float>} y operan
 sobre este transparentemente.
 
-\begin{verbatim}
+\begin{code}
   class SimdMatrix : public BaseMatrix<SimdMatrix> {
     ...
 
    private:
     std::vector<float> m_;  // los coeficientes de la matriz se mantienen aquí
   };
-\end{verbatim}
+\end{code}
 
 A continuación se muestra el código de las rutinas escritas en assembler.
 
@@ -861,11 +862,11 @@ A continuación se muestra el código de las rutinas escritas en assembler.
 
 Esta rutina implementa una función C con la siguiente signatura:
 
-\begin{verbatim}
+\begin{code}
   void simd_matrix_addition(uint size,
                             float *m,
                             const float *n)
-\end{verbatim}
+\end{code}
 
 Dadas dos matrices $M$ y $N$ en $\mathbb{R}^{k \times q}$ con $k \times q \geq
 4$, esta rutina recibe un parámetro $\cc{size} = k \times q$ y dos punteros
@@ -873,7 +874,7 @@ Dadas dos matrices $M$ y $N$ en $\mathbb{R}^{k \times q}$ con $k \times q \geq
 de $M$ y $N$, respectivamente, computa $M' = M + N$ y escribe en \cc{m} los
 coeficientes de $M'$.
 
-\begin{verbatim}
+\begin{code}
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; void simd_matrix_addition(uint size,       // rdi ;;
   ;;                           float* m,        // rsi ;;
@@ -945,7 +946,7 @@ coeficientes de $M'$.
     pop rbx
     pop rbp
     ret
-\end{verbatim}
+\end{code}
 
 Esencialmente el algoritmo se compone de un loop
 \cc{simd\_matrix\_addition\_loop} que lee de a cuatro elementos de $M$ y $N$
@@ -974,11 +975,11 @@ define la operación (\cc{addps}, \cc{subps} y \cc{mulps}, respectivamente.)
 
 Esta rutina implementa una función C con la siguiente signatura:
 
-\begin{verbatim}
+\begin{code}
   void simd_matrix_subtraction(uint size,
                                float *m,
                                const float *n)
-\end{verbatim}
+\end{code}
 
 Dadas dos matrices $M$ y $N$ en $\mathbb{R}^{k \times q}$ con $k \times q \geq
 4$, esta rutina recibe un parámetro $\cc{size} = k \times q$ y dos punteros
@@ -994,11 +995,11 @@ reemplaza la instrucción \cc{addps} por \cc{subps}.
 
 Esta rutina implementa una función C con la siguiente signatura:
 
-\begin{verbatim}
+\begin{code}
   void simd_matrix_coeff_wise_product(uint size,
                                       float *m,
                                       const float *n)
-\end{verbatim}
+\end{code}
 
 Dadas dos matrices $M$ y $N$ en $\mathbb{R}^{k \times q}$ con $k \times q \geq
 4$, esta rutina recibe un parámetro $\cc{size} = k \times q$ y dos punteros
@@ -1014,11 +1015,11 @@ reemplaza la instrucción \cc{addps} por \cc{mulps}.
 
 Esta rutina implementa una función C con la siguiente signatura:
 
-\begin{verbatim}
+\begin{code}
   void simd_matrix_scalar_product(uint size,
                                   float* m,
                                   float c)
-\end{verbatim}
+\end{code}
 
 Dadas una constante $c \in \mathbb{R}$ y una matriz $M$ en $\mathbb{R}^{k
 \times q}$ con $k \times q \geq 4$, esta rutina recibe un parámetro $\cc{size}
@@ -1026,7 +1027,7 @@ Dadas una constante $c \in \mathbb{R}$ y una matriz $M$ en $\mathbb{R}^{k
 con los coeficientes de $M$, computa $M' = c \times M$ y escribe en \cc{m} los
 coeficientes de $M'$.
 
-\begin{verbatim}
+\begin{code}
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; void simd_matrix_scalar_product(uint size,  // rdi  ;;
   ;;                                 float* m,   // rsi  ;;
@@ -1099,7 +1100,7 @@ coeficientes de $M'$.
     pop rbx
     pop rbp
     ret
-\end{verbatim}
+\end{code}
 
 El algoritmo replica la constante $c$ en los 4 floats contenidos en \cc{xmm0} y
 entra en el bucle \cc{scalar\_product\_loop}, donde se leen en \cc{xmm1} los
@@ -1123,14 +1124,14 @@ se los restaura a su estado anterior volcando el contenido del registro
 
 Esta rutina implementa una función C con la siguiente signatura:
 
-\begin{verbatim}
+\begin{code}
   void simd_matrix_product(uint rows1,
                            uint cols1,
                            uint cols2,
                            const float* m,
                            const float* nt,
                            float* p)
-\end{verbatim}
+\end{code}
 
 Dadas dos matrices $M \in \mathbb{R}^{k \times q}$ y $N \in \mathbb{R}^{q \times
 r}$ (con $k, q, r \geq 4$), esta rutina recibe los siguientes parámetros:
@@ -1149,7 +1150,7 @@ r}$ (con $k, q, r \geq 4$), esta rutina recibe los siguientes parámetros:
 La rutina computa el producto matricial $P = M \times N$ y escribe en \cc{p}
 los coeficientes de $P$.
 
-\begin{verbatim}
+\begin{code}
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; void simd_matrix_product(uint rows1,      // rdi ;;
   ;;                          uint cols1,      // rsi ;;
@@ -1219,7 +1220,7 @@ los coeficientes de $P$.
     pop rbx
     pop rbp
     ret
-\end{verbatim}
+\end{code}
 
 La rutina itera sobre las filas de la matriz resultante $P$ (bucle
 \cc{product\_rows\_loop}) y sobre las columnas de la misma (bucle
@@ -1230,7 +1231,7 @@ en \cc{xmm2} en la posición correspondiente a $P_{i,j}$ en \cc{p}.
 
 Ambas rutinas se elaboran a continuación.
 
-\begin{verbatim}
+\begin{code}
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Procedure product_compute_ij computes the value for cell (i,j) in      ;;
   ;; the resulting matrix. Expects rdi = rows, rsi=cols1, rcx=pointer to m, ;;
@@ -1327,7 +1328,7 @@ Ambas rutinas se elaboran a continuación.
 
   exit_product_internal_loop:
     ret
-\end{verbatim}
+\end{code}
 
 La rutina \cc{product\_compute\_ij} computa el valor para $P_{i,j}$, que es lo
 mismo que computar el producto interno entre la $i$-ésima fila de $M$ y la
@@ -1354,7 +1355,7 @@ Finalmente el valor para $P_{i,j}$ se retorna en el registro \cc{xmm2}.
 
 A continuación se explican dichas rutinas.
 
-\begin{verbatim}
+\begin{code}
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Procedure product_ijk_fetch loads m[i, cols1-4..cols1] into xmm0 ;;
   ;; and n[cols1-4..cols1, j] into xmm1. Expects r12=i, r13=j, r14=k, ;;
@@ -1388,7 +1389,7 @@ A continuación se explican dichas rutinas.
     movups xmm1, [r8 + rax]  ; Copy values at current offset in matrix nt
 
     ret
-\end{verbatim}
+\end{code}
 
 La rutina \cc{product\_ijk\_fetch} computa el desplazamiento en \cc{m} donde se
 hallan los valores correspondientes a $M_{i,k \ldots k+3}$ y luego carga estos
@@ -1398,7 +1399,7 @@ k+3}$ y guarda estos valores en \cc{xmm1}.
 A continuación se explica la rutina \cc{product\_ijk\_reduce} y sus variantes
 para 1, 2 y 3 valores restantes.
 
-\begin{verbatim}
+\begin{code}
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Procedure product_ijk_reduce computes the dot product between ;;
   ;; xmm0 and xmm1 and stores it in the low dword in xmm0.         ;;
@@ -1437,7 +1438,7 @@ para 1, 2 y 3 valores restantes.
   product_ijk_reduce_3_columns_left:
     dpps xmm0, xmm1, 0xE1
     ret
-\end{verbatim}
+\end{code}
 
 La rutina \cc{product\_ijk\_reduce} y sus variantes simplemente computan el
 producto interno entre los valores correspondientes en \cc{xmm0} y \cc{xmm1} y
@@ -1448,7 +1449,7 @@ El último paso de la rutina \cc{simd\_matrix\_product} consiste en guardar en
 realiza por medio de la rutina \cc{product\_save\_ij}, que se explica a
 continuación.
 
-\begin{verbatim}
+\begin{code}
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Procedure product_save_ij stores the computed value for (i,j) ;;
   ;; in the resulting matrix. Expects r12=i, r13=j, rdx=cols2,     ;;
@@ -1470,7 +1471,7 @@ continuación.
     movss [r9 + rax], xmm2    ; Copy values at current offset in matrix m
 
     ret
-\end{verbatim}
+\end{code}
 
 La rutina \cc{product\_save\_ij} calcula el desplazamiento para $(i,j)$ en
 \cc{p} y guarda allí el valor para $P_{i,j}$ contenido en \cc{xmm2}, que fue
@@ -1481,12 +1482,12 @@ computado en \cc{product\_compute\_ij}.
 
 Esta rutina implementa una función C con la siguiente signatura:
 
-\begin{verbatim}
+\begin{code}
   void simd_matrix_transpose(uint rows,
                              uint cols,
                              const float* m,
                              float* n)
-\end{verbatim}
+\end{code}
 
 Dada una matriz $M$ en $\mathbb{R}^{k \times q}$ con $k \geq 4$, esta rutina
 recibe los siguientes parámetros:
@@ -1502,7 +1503,7 @@ recibe los siguientes parámetros:
 La rutina computa la matriz transpuesta $M^t \in \mathbb{R}^{q \times k}$ y
 escribe en \cc{n} los coeficientes de $M^t$.
 
-\begin{verbatim}
+\begin{code}
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; void simd_matrix_transpose(uint rows,       // rdi ;;
   ;;                            uint cols,       // rsi ;;
@@ -1574,7 +1575,7 @@ escribe en \cc{n} los coeficientes de $M^t$.
     pop rbx
     pop rbp
     ret
-\end{verbatim}
+\end{code}
 
 La rutina itera sobre las columnas de $M$ (bucle \cc{transpose\_cols\_loop},
 índice $j$) y las filas de $M$ (bucle \cc{transpose\_rows\_loop}, índice $i$)
@@ -1590,7 +1591,7 @@ ningún momento.
 
 A continuación se explica la rutina \cc{transpose\_ij}.
 
-\begin{verbatim}
+\begin{code}
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Procedure transpose_ij copies m[i..i+3, j] to n[j, i..i+3].     ;;
   ;; Expects rdi=rows, rsi=cols, rdx=pointer to m, rcx=pointer to n, ;;
@@ -1675,7 +1676,7 @@ A continuación se explica la rutina \cc{transpose\_ij}.
 
     ; End of procedure
     ret
-\end{verbatim}
+\end{code}
 
 La rutina \cc{transpose\_ij} realiza los siguientes pasos:
 
@@ -1702,24 +1703,24 @@ Esto concluye la rutina \cc{simd\_matrix\_transpose}.
 La clase \cc{EigenMatrix} actúa como un envoltorio alrededor de la clase
 \cc{Eigen::MatrixXf} de la librería Eigen:
 
-\begin{verbatim}
+\begin{code}
 class EigenMatrix : public BaseMatrix<EigenMatrix> {
   ...
 
  private:
   Eigen::MatrixXf m_;
 };
-\end{verbatim}
+\end{code}
 
 Todas las operaciones que esta clase implementa son delegadas a las operaciones
 equivalentes en \cc{Eigen::MatrixXf}. El siguiente ejemplo corresponde a la
 operación de suma entre matrices:
 
-\begin{verbatim}
+\begin{code}
   void EigenMatrix::operator+=(const EigenMatrix& other) {
     m_ += other.m_;
   }
-\end{verbatim}
+\end{code}
 
 El resto de las operaciones se delegan al método correspondiente en la clase
 \cc{Eigen::MatrixXf} de forma similar.

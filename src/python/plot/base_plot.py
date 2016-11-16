@@ -14,7 +14,7 @@ class BasePlot:
                          'legend.labelspacing': 0.2})
 
     fig = plt.figure()
-    fig.set_size_inches(6, 4)
+    fig.set_size_inches(6, 3.8)
 
     self.do_plot(plt)
 

@@ -25,7 +25,6 @@ ui:
 bundle: clean
 	mkdir Orga2-TPFinal
 	mkdir Orga2-TPFinal/data
-	cp data/mnist.pkl.gz Orga2-TPFinal/data
 	cp -r lib Makefile README.md src stats Orga2-TPFinal
 	tar zcf Orga2-TPFinal.tar.gz Orga2-TPFinal
 	rm -rf Orga2-TPFinal

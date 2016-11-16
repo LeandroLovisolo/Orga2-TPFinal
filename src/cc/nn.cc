@@ -7,14 +7,16 @@
 #include "network.h"
 #include "optparse.h"
 
-constexpr int kHiddenLayerSize = 30;
+constexpr char kDefaultMatrixImpl[] = "simd";
+constexpr int kDefaultNumEpochs = 10;
 
-constexpr char kPathSeparator[] = "/";
-constexpr char kDefaultDataDirPath[] = "../../data";
+constexpr char kDefaultDataBasePath[] = "data/";
 constexpr char kTrainImagesPath[] = "train-images-idx3-ubyte";
 constexpr char kTrainLabelsPath[] = "train-labels-idx1-ubyte";
 constexpr char kTestImagesPath[] = "t10k-images-idx3-ubyte";
 constexpr char kTestLabelsPath[] = "t10k-labels-idx1-ubyte";
+
+constexpr int kHiddenLayerSize = 30;
 
 using namespace std;
 
@@ -33,15 +35,15 @@ TrainingData<Vector> to_training_data(const LabelledMistData& mnist_data) {
 }
 
 string join_path(const string& directory, const string& filename) {
-  return directory + kPathSeparator + filename;
+  return directory + filename;
 }
 
-void TestCheckpointAccuracy(const string& data_dir_path,
+void TestCheckpointAccuracy(const string& data_base_path,
                             const string& checkpoint_path) {
-  MnistLoader loader(join_path(data_dir_path, kTrainImagesPath),
-                     join_path(data_dir_path, kTrainLabelsPath),
-                     join_path(data_dir_path, kTestImagesPath),
-                     join_path(data_dir_path, kTestLabelsPath));
+  MnistLoader loader(join_path(data_base_path, kTrainImagesPath),
+                     join_path(data_base_path, kTrainLabelsPath),
+                     join_path(data_base_path, kTestImagesPath),
+                     join_path(data_base_path, kTestLabelsPath));
   ifstream f(checkpoint_path);
   string checkpoint((istreambuf_iterator<char>(f)),
                      istreambuf_iterator<char>());
@@ -55,24 +57,24 @@ void TestCheckpointAccuracy(const string& data_dir_path,
        << " digits correctly classified.)" << endl;
 }
 
-void ExportTrainingImage(const string& data_dir_path, int index) {
-  MnistLoader loader(join_path(data_dir_path, kTrainImagesPath),
-                     join_path(data_dir_path, kTrainLabelsPath),
-                     join_path(data_dir_path, kTestImagesPath),
-                     join_path(data_dir_path, kTestLabelsPath));
+void ExportTrainingImage(const string& data_base_path, int index) {
+  MnistLoader loader(join_path(data_base_path, kTrainImagesPath),
+                     join_path(data_base_path, kTrainLabelsPath),
+                     join_path(data_base_path, kTestImagesPath),
+                     join_path(data_base_path, kTestLabelsPath));
   cout << loader.ImageToPpm(loader.train_data(), index);
 }
 
 template<class Matrix, class Vector=Matrix>
 void TrainNetwork(const string& matrix_impl_name, int epochs,
-                  const string& data_dir_path,
+                  const string& data_base_path,
                   const string& stats_file,
                   const string& checkpoint_file) {
   // Load training data
-  MnistLoader loader(join_path(data_dir_path, kTrainImagesPath),
-                     join_path(data_dir_path, kTrainLabelsPath),
-                     join_path(data_dir_path, kTestImagesPath),
-                     join_path(data_dir_path, kTestLabelsPath));
+  MnistLoader loader(join_path(data_base_path, kTrainImagesPath),
+                     join_path(data_base_path, kTrainLabelsPath),
+                     join_path(data_base_path, kTestImagesPath),
+                     join_path(data_base_path, kTestLabelsPath));
   TrainingData<Vector> training_data =
       to_training_data<Matrix>(loader.train_data());
   TrainingData<Vector> test_data =
@@ -99,16 +101,16 @@ int main(int argc, char **argv) {
 
   parser.add_option("-m", "--matrix").dest("matrix")
     .help("Matrix implementation to be used. Possible values: "
-          "naive, simd, eigen (default).")
-    .set_default("eigen")
+          "naive, simd (default), eigen.")
+    .set_default(kDefaultMatrixImpl)
     .metavar("MATRIX_IMPL");
   parser.add_option("-n" "--num-epochs").dest("epochs")
     .help("Number of training epochs (default: 100)")
-    .set_default("100")
+    .set_default(kDefaultNumEpochs)
     .metavar("EPOCHS");
-  parser.add_option("-d", "--data").dest("data_dir_path")
+  parser.add_option("-d", "--data").dest("data_base_path")
     .help("Directory with data files")
-    .set_default(kDefaultDataDirPath)
+    .set_default(kDefaultDataBasePath)
     .metavar("DATA_DIR");
   parser.add_option("-s", "--stats").dest("stats_file")
     .help("File where to write out stats.")
@@ -130,30 +132,30 @@ int main(int argc, char **argv) {
   const optparse::Values options = parser.parse_args(argc, argv);
   string impl = options["matrix"];
   int epochs = stoi(options["epochs"]);
-  string data_dir_path = options["data_dir_path"];
+  string data_base_path = options["data_base_path"];
   string stats_file = options["stats_file"];
   string checkpoint_file = options["checkpoint_file"];
   string test_checkpoint_file = options["test_checkpoint_file"];
   string export_training_image = options["export_training_image"];
 
   if(!test_checkpoint_file.empty()) {
-    TestCheckpointAccuracy(data_dir_path, test_checkpoint_file);
+    TestCheckpointAccuracy(data_base_path, test_checkpoint_file);
     return 0;
   }
 
   if(!export_training_image.empty()) {
-    ExportTrainingImage(data_dir_path, stoi(export_training_image));
+    ExportTrainingImage(data_base_path, stoi(export_training_image));
     return 0;
   }
 
   if(impl == "naive") {
-    TrainNetwork<NaiveMatrix>(impl, epochs, data_dir_path,
+    TrainNetwork<NaiveMatrix>(impl, epochs, data_base_path,
                               stats_file, checkpoint_file);
   } else if(impl == "simd") {
-    TrainNetwork<SimdMatrix>(impl, epochs, data_dir_path,
+    TrainNetwork<SimdMatrix>(impl, epochs, data_base_path,
                              stats_file, checkpoint_file);
   } else if(impl == "eigen") {
-    TrainNetwork<EigenMatrix>(impl, epochs, data_dir_path,
+    TrainNetwork<EigenMatrix>(impl, epochs, data_base_path,
                               stats_file, checkpoint_file);
   } else {
     cerr << "Invalid MATRIX_IMPL. Run with --help to see valid options."

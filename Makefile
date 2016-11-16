@@ -36,10 +36,12 @@ publish:
 clean:
 	make -C src/cc clean
 	make -C src/tex clean
-	rm -rf $(TRAIN_IMAGES) $(TRAIN_LABELS) \
-         $(TEST_IMAGES) $(TEST_LABELS) \
-         src/cc/nnO0 src/cc/nnO1 src/cc/nnO2 src/cc/nnO3 \
+	rm -rf src/cc/nnO0 src/cc/nnO1 src/cc/nnO2 src/cc/nnO3 \
          src/__pycache__ src/python/*.pyc src/python/plot/*.pyc
+
+clean-data:
+	rm -f $(TRAIN_IMAGES) $(TRAIN_LABELS) \
+        $(TEST_IMAGES) $(TEST_LABELS)
 
 clean-ui:
 	make -C src/cc clean-ui

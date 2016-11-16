@@ -156,3 +156,7 @@ plots:
 
 informe: plots
 	make -C src/tex all
+
+clean-informe:
+	make -C src/tex clean
+	rm -f src/tex/*.pdf

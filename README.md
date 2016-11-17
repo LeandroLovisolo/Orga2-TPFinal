@@ -34,8 +34,7 @@ Nota: se requiere una conexión a internet ya que la primera vez que se invoca
 neuronal.
 
  * Ingresar al directorio raíz del proyecto:  
-   `$ cd Orga2-TPFinal`  
-   (reemplazar `Orga2-TPFinal` por la ruta correspondiente)
+   `$ cd Orga2-TPFinal`
  * Invocar make:  
    `$ make`
 
@@ -46,8 +45,7 @@ Las siguientes son instrucciones para ejecutar el proceso de entrenamiento del
 modelo.
 
  * Ingresar al directorio raíz del proyecto:  
-    `$ cd Orga2-TPFinal`  
-   (reemplazar `Orga2-TPFinal` por la ruta correspondiente)
+    `$ cd Orga2-TPFinal`
  * Para lanzar el proceso de entrenamiento con la configuración por defecto
    (implementación SIMD, 10 épocas de entrenamiento) ejecutar:  
    `$ src/cc/nn`
@@ -95,8 +93,7 @@ La interfaz gráfica se incluye precompilada, y se puede acceder de acuerdo a
 las siguientes instrucciones:
 
  * Ingresar al directorio donde se radica la interfaz gráfica:  
-   `$ cd Orga2-TPFinal/src/ui`  
-   (reemplazar `Orga2-TPFinal` por la ruta correspondiente)
+   `$ cd Orga2-TPFinal/src/ui`
  * Lanzar un servidor web:  
    `$ python -m SimpleHTTPServer`
  * Ingresar a [http://localhost:8000](http://localhost:8000) con cualquier
@@ -155,14 +152,12 @@ Esto finaliza la instalación de Emscripten.
 Las siguientes son instrucciones para recompilar el archivo `src/ui/nn.js`.
 
  * Ingresar al directorio de Emscripten:  
-   `$ cd emsdk_portable`  
-   (reemplazar `emsdk_portable` por la ruta correspondiente)
+   `$ cd emsdk_portable`
  * Actualizar las variables de entorno para reflejar la instalación de
    Emscripten: \
    `$ source ./emsdk_env.sh`
  * Ingresar al directorio raíz del proyecto:  
-   `$ cd Orga2-TPFinal`  
-   (reemplazar `Orga2-TPFinal` por la ruta correspondiente)
+   `$ cd Orga2-TPFinal`
  * Recompilar interfaz gráfica:  
    `$ make clean-ui ui`
 

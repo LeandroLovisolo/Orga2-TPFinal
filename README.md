@@ -99,7 +99,7 @@ las siguientes instrucciones:
    (reemplazar `Orga2-TPFinal` por la ruta correspondiente)
  * Lanzar un servidor web:  
    `$ python -m SimpleHTTPServer`
- * Ingresar a [http://localhost:80000](http://localhost:8000) con cualquier
+ * Ingresar a [http://localhost:8000](http://localhost:8000) con cualquier
    navegador web moderno.
 
 Alternativamente, se puede acceder a una versión hosteada en un servidor
@@ -173,5 +173,5 @@ seguir los mismos pasos mencionados antes:
    `$ src/ui`
  * Lanzar un servidor web:  
    `$ python -m SimpleHTTPServer`
- * Ingresar a [http://localhost:80000](http://localhost:8000) con cualquier
+ * Ingresar a [http://localhost:8000](http://localhost:8000) con cualquier
    navegador web moderno.

@@ -18,12 +18,10 @@
 \usepackage{multirow}
 \usepackage{hyperref}
 \usepackage{xspace}
-\usepackage{makeidx}
 \usepackage{underscore}  % Permite hyphenar palabras con subraya (ej.: foo_bar)
 \usepackage{bm}  % Provee macro \bm
 \usepackage[toc, page]{appendix}
 
-\makeindex
 
 %%%%%%%%%% Constantes - Inicio %%%%%%%%%%
 \newcommand{\titulolineauno}{Trabajo Práctico Final:}
@@ -159,7 +157,15 @@ Lovisolo, Leandro      & 645/11 & leandro@leandro.me\\
 
 \newpage
 
-\printindex
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Tabla de contenidos                                                        %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\tableofcontents
+
+\newpage
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1823,11 +1829,12 @@ bien implementadas y testeadas.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Apéndice: GUI                                                              %%
+%% Apéndice: Interfaz gráfica                                                 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-\section{Apéndice: GUI}
+\appendix
+\section{Apéndice: Interfaz gráfica}
 
 Con el motivo de depurar la red neuronal implementada en este trabajo, se
 desarrolló una interfaz gráfica que permite dibujar dígitos con el mouse y

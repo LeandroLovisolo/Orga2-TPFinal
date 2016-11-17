@@ -14,7 +14,7 @@ Alumno
 
 Leandro Lovisolo (LU 645/11) [leandro@leandro.me](mailto:leandro@leandro.me)
 
-Prerequisitos
+Prerrequisitos
 -------------
 
 Las instrucciones a continuación asumen un sistema basado en Debian.

@@ -299,8 +299,8 @@ a la que luego se le suma un término de sesgo $b \in \mathbb{R}$:
 $$z = w_1 x_1 + w_2 x_2 + \ldots + w_n x_n + b$$
 
 Esta combinación lineal entre $w_1, \ldots, w_n$ y $x_1, \ldots, x_n$ se puede
-escribir como el producto entre vectores $\bm{w} = (w_1, \ldots, w_n)$ y
-$\bm{x} = (x_1, \ldots, x_n)$ de la siguiente manera:
+escribir como el producto interno entre los vectores $\bm{w} = (w_1, \ldots,
+w_n)$ y $\bm{x} = (x_1, \ldots, x_n)$ de la siguiente manera:
 
 $$z = \bm{w} \cdot \bm{x} + b$$
 
@@ -543,8 +543,8 @@ obtenido $\nabla C(\bm{w}, \bm{b})$, se mueve $(\bm{w}, \bm{b})$ en esa
 dirección por una pequeña cantidad, bajo la hipótesis que $C(\bm{w}, \bm{b})
 \leq C((\bm{w}, \bm{b}) - \gamma \nabla C(\bm{w}, \bm{b}))$ para algún $\gamma$
 suficientemente pequeño. Esto se repite hasta alcanzar algún criterio de
-parada, usualmente un número máximo de iteraciones o una disminución del error
-entre paso y paso que caiga por debajo de cierto umbral.
+parada, usualmente un número máximo de iteraciones, o cuando la diferencia del
+error entre la iteración actual y la anterior cae por debajo de cierto umbral.
 
 \img{gradient-descent.png}{Gradiente descendente}{img:gradient-descent}
 
@@ -552,7 +552,7 @@ Notar que este algoritmo requiere que la función de costo $C$ sea diferenciable
 
 En la práctica se usa una variante de este algoritmo, denominada
 \link{https://en.wikipedia.org/wiki/Stochastic_gradient_descent}{gradiente
-descendente estocástico}, que en cada iteración computa el error del modelo
+descendente estocástico,} que en cada iteración computa el error del modelo
 contra varios minibaches del conjunto de ejemplos de entrenamiento y luego los
 promedia, en lugar de computar el error contra todos los ejemplos de
 entrenamiento en un sólo paso. Esto mejora notablemente el tiempo que se demora
